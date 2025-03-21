@@ -1,9 +1,10 @@
 import React from 'react'
+import Date from 'react'
 
 function Footer() {
     return(
         <footer>
-            <p>Footer für die Website</p>
+            <p> © 2025 TeamQuiz</p>
         </footer>
     );
 }

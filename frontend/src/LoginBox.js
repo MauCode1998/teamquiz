@@ -1,5 +1,9 @@
 import React, {useState} from 'react';
 import { useNavigate } from "react-router-dom";
+import Button from '@mui/joy/Button';
+import Input from '@mui/joy/Input';
+import Card from '@mui/joy/Card';
+
 
 
 function LoginBox() {
@@ -16,24 +20,29 @@ function LoginBox() {
     
     return(
         <div className = 'loginPage'>
-            <div className = 'loginBox'>
+            <Card sx = {{width:"20rem"}}>
             <h2 className='loginBoxTitle'>Login</h2>
             <label>Benutzername</label>
-            <input 
+            <Input 
                 placeholder='Benutzername'
                 value={benutzername}
                 onChange = {(e)=> setBenutzername(e.target.value)}
             />
             
             <label>Passwort</label>
-            <input 
+            <Input 
                 placeholder='Passwort'
                 value={passwort}
+                type = "password"
                 onChange = {(e)=> setPasswort(e.target.value)}
             />
 
-            <button className ='anmeldebutton' onClick = {() => validateLogin()}>Anmelden</button>
-            </div>
+            <Button 
+              variant="solid" 
+              color="primary"
+              sx = {{marginTop: "0.5rem;"}} 
+              onClick = {() => validateLogin()}>Anmelden</Button>
+            </Card>
         </div>
     );
 }

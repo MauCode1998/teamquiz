@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from login_handler import login_interaktion_db
 import random
 from db_operations import get_user_groups
+from fastapi.responses import JSONResponse
 
 
 app = FastAPI()
@@ -40,32 +41,10 @@ async def login(request: LoginRequest):
 
     if login_interaktion_db(benutzername, passwort):
         token = generate_token(benutzername)
-        print(f"Token für {benutzername}: {token}")
-        return {"message": "Login Erfolgreich", "username": benutzername, "token": token}
-    
+        response.set_cookie
     raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
 
 
-@app.get("/get-groups/")
-async def get_groups(request: Request):
-    """Diese Route ist geschützt und erfordert ein gültiges Token"""
-    auth_header = request.headers.get("Authorization")
-    
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Kein Token übermittelt")
-
-    token = auth_header.split(" ")[1]  # Token extrahieren
-    
-    if token not in token_speicher:
-        raise HTTPException(status_code=401, detail="Ungültiges Token")
-
-    username = token_speicher[token]  # Nutzername aus Token abrufen
-
-    gruppenliste = get_user_groups(username)['groups']
-    return {
-        "message": f"Gruppen für {username}",
-        "groups": gruppenliste
-    }
 
 
 if __name__ == '__main__':

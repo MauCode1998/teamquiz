@@ -3,6 +3,7 @@ import Fach from './Fach.js';
 import Footer from './Footer.js';
 import Gruppe from './Gruppe.js';
 import Gruppen from './Gruppen.js';
+import Lobby from './Lobby.js';
 import Karte from './Karte.js';
 import React from 'react';
 import LoginBox from './LoginBox.js';
@@ -23,6 +24,7 @@ function App() {
           <Route path="/gruppe" element={<Gruppe/>}/>
           <Route path="/gruppen" element={<Gruppen/>}/>
           <Route path="/karte" element={<Karte/>}/>
+          <Route path="/lobby" element={<Lobby/>}/>
           
         </Routes>
         <Footer/>
