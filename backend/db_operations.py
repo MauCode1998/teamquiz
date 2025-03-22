@@ -170,9 +170,9 @@ def get_user_groups(username: str):
     if not user:
         db.close()
         return {"message": "Benutzer nicht gefunden", "groups": []}
-
+    
     # Liste von Gruppen als JSON-Format
-    groups = [{"id": assoc.group.id, "name": assoc.group.name} for assoc in user.user_groups]
+    groups = [{"id": assoc.group.id, "name": assoc.group.name} for assoc in user.user_groups if assoc.group is not None]
 
     db.close()
     
@@ -267,8 +267,10 @@ def is_subject_in_group(subjectname,group_id):
 
 
     if subject != None:
+       db.close()
        return True
     else:
+       db.close()
        return False
     
 
@@ -427,6 +429,8 @@ if __name__ == '__main__':
     #print(add_answers_to_flashcard("1",[{"text":"Kissen rocken","is_correct":False},{"text":"Kissen pocken","is_correct":False},{"text":"Kissen mocken","is_correct":True}]))
     #print([user.username for user in get_users()])
     #print(create_invitation("Hongfa","Mau","Bango"))
-    print(get_invitations("Hongfa"))
+    #print(get_invitations("Hongfa"))
     #print(get_group_name(1))
+    
+    print(get_group("Bango"))
     pass

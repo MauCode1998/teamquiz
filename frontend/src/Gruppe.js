@@ -6,7 +6,7 @@ import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import Input from '@mui/joy/Input';
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate} from "react-router-dom";
 import Accordion from '@mui/joy/Accordion';
 import AccordionDetails from '@mui/joy/AccordionDetails';
 import AccordionGroup from '@mui/joy/AccordionGroup';
@@ -18,40 +18,111 @@ function Gruppe() {
     
     const [alleFaecher,fächerAktualisieren] =  useState([]);
     const [alleTeilnehmer,teilnehmerAktualisieren] =  useState([]);
+    const [neuesFach,neuesFachAktualisieren] = useState("");
     const gruppenId = "1";
     const [searchParams] = useSearchParams();
-    
+    const [params] = useSearchParams();
+    const gruppenname = params.get("name")
+    const navigate = useNavigate();
+
+
+    async function gruppeLöschen() {
+        console.log(`Gruppe wird gleich gelöscht!`)
+
+        const gruppeErstellenRequest = await fetch("http://127.0.0.1:8000/delete-group", {
+            "method":"DELETE",
+            "headers": {
+                "token":"123456789",
+                "Content-Type":"application/json"
+            },
+            "body": JSON.stringify({"gruppen_name":searchParams.get("name")})
+            ,
+            credentials: 'include'
+        })
+
+        const data = await gruppeErstellenRequest.json();
+        console.log(data)
+
+        navigate("/gruppen")
+
+      
+    }
+
+    async function fachErstellen() {
+        console.log(`Fach ${neuesFach} wird gleich erstellt!`)
+
+        const fachErstellenRequest = await fetch("http://127.0.0.1:8000/fach-erstellen", {
+            "method":"POST",
+            "headers": {
+                "token":"123456789",
+                "Content-Type":"application/json"
+            },
+            "body": JSON.stringify({"fach_name":neuesFach,"gruppen_name":gruppenname})
+            ,
+            credentials: 'include'
+        })
+
+        const data = await fachErstellenRequest.json();
+        console.log(data)
+        datenLaden();
+        neuesFachAktualisieren("");
+
+        
+    }
+
+    async function gruppeVerlassen() {
+        console.log(`Gruppe wird verlassen.`)
+
+        const gruppeVerlassenRequest = await fetch("http://127.0.0.1:8000/leave-group", {
+            "method":"DELETE",
+            "headers": {
+                "token":"123456789",
+                "Content-Type":"application/json"
+            },
+            "body": JSON.stringify({"gruppen_name":searchParams.get("name")})
+            ,
+            credentials: 'include'
+        })
+
+        const data = await gruppeVerlassenRequest.json();
+        console.log(data)
+
+        
+
+      
+    }
+
+    async function datenLaden(){
+        const response = await fetch(`http://127.0.0.1:8000/get-specific-group/?name=${encodeURIComponent(gruppenname)}`,
+        {"method":"GET",
+         "headers": {
+            "token":"123456789",
+            "Content-Type":"application/json"
+         }
+         
+        })
+
+        const data = await response.json();
+        const mitglieder = data.content.users;
+        const faecher = data.content.subjects;
+
+        fächerAktualisieren(faecher);
+        teilnehmerAktualisieren(mitglieder);
+    }
 
 
     useEffect(() => {
-        async function datenLaden(){
-            const response = await fetch(`http://127.0.0.1:8000/get-specific-group/?name=${encodeURIComponent(gruppenname)}`,
-            {"method":"GET",
-             "headers": {
-                "token":"123456789",
-                "Content-Type":"application/json"
-             }
-             
-            })
-
-            const data = await response.json();
-            const mitglieder = data.content.users;
-            const faecher = data.content.subjects;
-
-            fächerAktualisieren(faecher);
-            teilnehmerAktualisieren(mitglieder);
-        }
+        
 
         datenLaden()
-        },[]);
+        },[gruppenname]);
 
     
-    const [params] = useSearchParams();
-    const gruppenname = params.get("name")
     
-    const listItems = alleFaecher.map(fach => 
+    
+    const listItems = alleFaecher.map((fach,index) => 
                 
-                <ListItem sx={{"&:hover":{backgroundColor: '#DDD'}, width:"50vw",cursor: 'pointer',borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
+                <ListItem key={index} sx={{"&:hover":{backgroundColor: '#DDD'}, width:"50vw",cursor: 'pointer',borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
                  <Link href={`/fach?name=${encodeURI(fach)}&gruppenname=${encodeURIComponent(gruppenname)}`}>{fach}</Link>
                 </ListItem>
      
@@ -83,9 +154,14 @@ function Gruppe() {
                         <AccordionDetails>
                         <Input 
                             placeholder='Neuer Fach Name'
+                            value={neuesFach}
+                            onChange={(e) => {
+                                neuesFachAktualisieren(e.target.value)
+                            }}
                            
                         />   
-                        <Button>Speichern</Button>
+                        <Button
+                        onClick={fachErstellen}>Speichern</Button>
                         </AccordionDetails>
                         
                 </Accordion>
@@ -120,6 +196,27 @@ function Gruppe() {
           
                 
             </Card>
+
+
+            <Card>
+            <Button 
+              variant="outlined" 
+              color="primary"
+              sx = {{marginTop: "0.5rem;"}} 
+              onClick= {gruppeVerlassen}
+              >Austreten</Button>
+          
+    
+            <Button 
+              variant="outlined" 
+              color="danger"
+              sx = {{marginTop: "0.5rem;"}} 
+              onClick= {gruppeLöschen}
+              >Gruppe Löschen</Button>
+          
+                
+            </Card>
+     
 
             
             

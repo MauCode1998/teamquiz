@@ -13,8 +13,8 @@ class Group(Base):
     __tablename__ = "groups"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-    group_users = relationship("UserGroupAssociation", back_populates="group")
-    subjects = relationship("Subject", back_populates="group")
+    group_users = relationship("UserGroupAssociation", back_populates="group", cascade="all, delete-orphan")
+    subjects = relationship("Subject", back_populates="group",cascade="all, delete-orphan")
 
 class UserGroupAssociation(Base):
     __tablename__ = "user_group_associations"
