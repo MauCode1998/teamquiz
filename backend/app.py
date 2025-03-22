@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from login_handler import login_interaktion_db
 import random
-from db_operations import get_user_groups,get_group,get_subject_cards,get_invitations
+from db_operations import get_user_groups,get_group,get_subject_cards,get_invitations,create_group
 from fastapi.responses import JSONResponse
 
 
@@ -13,6 +13,10 @@ app = FastAPI()
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+class GruppenRequest(BaseModel):
+    gruppen_name:str
+
 
 token_speicher = {
     "123456789":"Mau"
@@ -35,6 +39,21 @@ def generate_token(username):
         if token not in token_speicher:
             token_speicher[token] = username
             return token
+        
+
+@app.post("/gruppe-erstellen")
+async def create_new_group(gruppenrequest: GruppenRequest,token:str=Header(None)):
+    print("gruppe wird erstellt!")
+    print(gruppenrequest)
+    username = get_user_by_token(token)
+    neue_gruppe = create_group(gruppenrequest.gruppen_name,username)
+    print(neue_gruppe)
+
+    return {"message":"Success!","content":"Gruppe erfolgreich angelegt"}
+
+
+
+
     
 @app.get("/get-specific-group/")
 async def get_gruppen_specifics(name: str,token: str = Header(None)):

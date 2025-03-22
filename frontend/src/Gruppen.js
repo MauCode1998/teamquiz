@@ -7,37 +7,60 @@ import Button from '@mui/joy/Button';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Card from '@mui/joy/Card';
 import {useState,useEffect} from 'react';
+import Gruppe from "./Gruppe";
 
 function Gruppen() {
     const [alleGruppen,gruppeAktualisieren] = useState([]);
     const [alleEinladungen,einladungenAktualisieren] = useState([]);
+    const [neueGruppe,neueGruppeAktualisieren] = useState("");
 
-    
+    async function ladeGruppe() {
 
-    useEffect(()=> {
-        async function ladeGruppe() {
+        const gruppenDatenRequest = await fetch("http://127.0.0.1:8000/get-gruppeninfo", {
 
-            const gruppenDatenRequest = await fetch("http://127.0.0.1:8000/get-gruppeninfo", {
-
-                "method":"GET",
-                "headers":{
-                    "token":"123456789",
-                    "Content-Type":"application/json",
-                },
-                
-                credentials: 'include',
-          // Mode auf 'cors' setzen für explizite CORS-Behandlung
-            mode: 'cors'})
-            const daten = await gruppenDatenRequest.json()
-            const gruppen = daten.content.groups.map(gruppe => gruppe.name);
-            console.log(gruppen)
-            gruppeAktualisieren(gruppen)
+            "method":"GET",
+            "headers":{
+                "token":"123456789",
+                "Content-Type":"application/json",
+            },
             
+            credentials: 'include',
+     
+        mode: 'cors'})
+        const daten = await gruppenDatenRequest.json()
+        const gruppen = daten.content.groups.map(gruppe => gruppe.name);
+        console.log(gruppen)
+        gruppeAktualisieren(gruppen)
         
-        }
+    
+    }
+    
+    useEffect(()=> {
+        
         ladeGruppe();
 
-        },[]);
+    },[]);
+
+    async function gruppeErstellen() {
+            console.log(`Gruppe ${neueGruppe} wird gleich erstellt!`)
+    
+            const gruppeErstellenRequest = await fetch("http://127.0.0.1:8000/gruppe-erstellen", {
+                "method":"POST",
+                "headers": {
+                    "token":"123456789",
+                    "Content-Type":"application/json"
+                },
+                "body": JSON.stringify({"gruppen_name":neueGruppe})
+                ,
+                credentials: 'include'
+            })
+    
+            const data = await gruppeErstellenRequest.json();
+            console.log(data)
+    
+            ladeGruppe();
+        }
+    
 
 
         useEffect(()=> {
@@ -103,13 +126,17 @@ function Gruppen() {
             <h3>Neue Gruppe erstellen</h3>
             <Input 
                 placeholder='Gruppenname'
+                value = {neueGruppe}
+                onChange = {(e) => {
+                    neueGruppeAktualisieren(e.target.value);
+                }
+}
             />
              <Button 
               variant="outlined" 
               color="success"
               sx = {{marginTop: "0.5rem;"}} 
-              >Erstellen</Button>
-          
+              onClick={gruppeErstellen}>Erstellen!</Button>
                 
             </Card>
            <Card>

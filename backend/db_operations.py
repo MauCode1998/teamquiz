@@ -123,7 +123,7 @@ def is_groupname_taken(groupname):
     
 
 
-def create_group(gruppenname):
+def create_group(gruppenname,username):
     db = SessionLocal()
     neue_Gruppe = Group(name=gruppenname)
 
@@ -136,6 +136,7 @@ def create_group(gruppenname):
         db.commit()
         db.refresh(neue_Gruppe)
         db.close()
+        add_user_to_group(username,gruppenname)
         print("Gruppe",gruppenname,"erfolgreich angelegt.")
         return neue_Gruppe
     
