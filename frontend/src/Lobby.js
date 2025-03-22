@@ -1,4 +1,4 @@
-import React, { use } from "react";
+import { useState,React } from "react";
 import  Link from '@mui/joy/Link';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
@@ -33,40 +33,44 @@ function Lobby() {
     
 
     return (
-        <div className='mittelPage'>
 
-            <Card >
-               <h2>Beigetreten</h2>
-               <Card sx = {{backgroundColor:"#FFF", height:"100%"}}>
-                <List>
-                    {beigetretene}
-                </List>
-               </Card>
 
-               <Card sx={{ display:"flex", cursor:"pointer",alignItems:"center",justifyContent:"center"}}>
-                <Link href={`/lobby?gameid=${gameid}`}><h1>Runde starten</h1></Link>
-                </Card>
-            </Card>
+        <div className="parent">
+            <div className='mittelPage'>
 
-            
-           
-            <Card>
-                
-                <h3>🟢 Online</h3>
-                <Divider></Divider>
-                <Card  sx = {{backgroundColor:"#FFF", height:"100%"}}>
-                    <List aria-labelledby="decorated-list-demo">
-                        {teilnehmerItems}
+                <Card >
+                <h2>Beigetreten</h2>
+                <Card sx = {{backgroundColor:"#FFF", height:"100%"}}>
+                    <List>
+                        {beigetretene}
                     </List>
                 </Card>
 
-                
+                <Card sx={{ display:"flex", cursor:"pointer",alignItems:"center",justifyContent:"center"}}>
+                    <Link href={`/lobby?gameid=${gameid}`}><h1>Runde starten</h1></Link>
+                    </Card>
+                </Card>
 
-            </Card>
+                
             
+                <Card>
+                    
+                    <h3>🟢 Online</h3>
+                    <Divider></Divider>
+                    <Card  sx = {{backgroundColor:"#FFF", height:"100%"}}>
+                        <List aria-labelledby="decorated-list-demo">
+                            {teilnehmerItems}
+                        </List>
+                    </Card>
+
+                    
+
+                </Card>
+            
+            </div>
         </div>
     );
-}
+};
 
 
 

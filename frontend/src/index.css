@@ -44,11 +44,20 @@ code {
   grid-template-areas:
   "left right"
   "full full";
+  gap: 2rem;
+  height: 100vh;
+  width: 90vw;
+
+
+
+}
+
+.parent {
+  
   gap: 1rem;
   height: 100vh;
   width: 90vw;
   margin: auto;
-  padding: 2rem;
 
 }
 
@@ -132,8 +141,11 @@ header {
   display: flex;
   margin-bottom: 2rem;
   align-items: center; 
+  height: 5rem;
   justify-content: center;
-  background-color: #004;
+  background-color: #3FA2D2;
   color: white;
+  overflow:hidden;
+  
 }
 

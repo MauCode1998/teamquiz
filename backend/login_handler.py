@@ -5,6 +5,7 @@ mock_token = "abc"
 def login_interaktion_db(benutzername,kennwort):
     print("Main login aufgerufen")
     user_dict = get_user(benutzername)
+    
     print(user_dict)
 
     if user_dict == None:

@@ -22,23 +22,59 @@ def create_user(username:str,password:str):
         return neuer_nutzer
     except Exception as e:
         print("Fehler beim Nutzer anlegen.",e)
+        
+def create_invitation(from_username,to_username,groupname):
+    db = SessionLocal()
+    group_id = get_group_id(groupname)
+    from_user_id = get_user_id(from_username)
+    taken= is_username_taken(to_username)
+    to_user_id = get_user_id(to_username)
+
+    if taken:
+        neue_einladung = Invitation(group_id=group_id,from_user_id=from_user_id,to_user_id=to_user_id)
+        print(neue_einladung)
+        db.add(neue_einladung)
+        db.commit()
+        db.refresh(neue_einladung)
+        db.close()
+    else:
+        print("Nutzer der eingeladen werden sollte wurde nicht gefunden!")
+        db.close()
+
+def delete_invitation(invitation_id):
+    pass
+
+def get_invitations(username):
+    db = SessionLocal()
+    user_id = get_user_id(username)
+    invitations = db.query(Invitation).filter(Invitation.to_user_id == user_id).all()
+    invitation_list = [{"From":get_username_by_id(invitation.from_user_id),"To":get_group_name_by_id(invitation.group_id)} for invitation in invitations]
+    db.close()
+
+    return invitation_list
 
 
 def is_username_taken(username):
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
     if user != None:
+        db.close()
         return True
     else:
+        db.close()
         return False
+    
 
 def get_user_id(username):
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
     if user != None:
+        db.close()
         return user.id
     else:
+        db.close()
         return user
+
 
 def get_user(username):
     db = SessionLocal()
@@ -51,9 +87,18 @@ def get_user(username):
         "username":user.username,
         "password":user.password
     }
+        db.close()
         return user_dict
     else:
         return user
+
+def get_username_by_id(id):
+    db = SessionLocal()
+    user = db.query(User).filter(User.id== id).first()
+    db.close()
+    return user.username
+    
+
 
 def get_users():
     db = SessionLocal()
@@ -70,8 +115,10 @@ def is_groupname_taken(groupname):
 
     gruppenname = db.query(Group).filter(Group.name == groupname).first()
     if gruppenname != None:
+        db.close()
         return True
     else:
+        db.close()
         return False
     
 
@@ -81,6 +128,7 @@ def create_group(gruppenname):
     neue_Gruppe = Group(name=gruppenname)
 
     if is_groupname_taken(gruppenname):
+        db.close()
         return "Gruppenname schon vergeben"
     
     try:
@@ -133,13 +181,21 @@ def get_user_groups(username: str):
 
 
 def get_group_id(gruppenname):
-
     db = SessionLocal()
     group = db.query(Group).filter(Group.name == gruppenname).first()
     if group != None:
         return group.id
     else:
         return False
+    
+
+
+def get_group_name_by_id(id):
+    db = SessionLocal()
+    group_name = db.query(Group).filter(Group.id == id).first().name
+    db.close()
+    return group_name
+    
 
 
 def add_user_to_group(username:str,groupname:str):
@@ -149,11 +205,14 @@ def add_user_to_group(username:str,groupname:str):
 
     #checken ob user existiert
     if not is_username_taken(username):
+        db.close()
         return "User nicht gefunden"
     if not is_groupname_taken(groupname):
+        db.close()
         return "Groupname nicht gefunden"
     
     if is_user_in_group(username,groupname):
+        db.close()
         return "Nutzer ist bereits in der Gruppe"
 
     try:
@@ -165,6 +224,7 @@ def add_user_to_group(username:str,groupname:str):
         print("Nutzer hinzugefügt")
 
     except Exception as e:
+        db.close()
         return f"Fehler beim hinzufügen des Nutzers zur gruppe {e}"
 
 def delete_user_from_group(username:str,groupname:str):
@@ -231,8 +291,9 @@ def get_group(name):
     
 
 #### Subject Funktionen #####
-def add_subject_to_group(subjectname,group_id):
+def add_subject_to_group(subjectname,groupname):
     db = SessionLocal()
+    group_id = get_group_id(groupname)
     new_subject = Subject(name=subjectname,group_id=group_id)
     
     if is_subject_in_group(subjectname=subjectname,group_id=group_id):
@@ -280,12 +341,12 @@ def get_subject_cards(subjectname, groupname):
 
     if not subject:
         db.close()
-        return "Das Subject existiert nicht in der Gruppe."
+        return False
 
-    # Alle Flashcards für das Subject abrufen
+    
     flashcards = db.query(Flashcard).filter(Flashcard.subject_id == subject.id).all()
 
-    # Daten als Dictionary formatieren
+   
     subject_cards = {
         "subject_id": subject.id,
         "subject_name": subject.name,
@@ -310,8 +371,7 @@ def get_subject_cards(subjectname, groupname):
 
 def add_answers_to_flashcard(karteikarten_id:int,antwortdict:dict):
     db = SessionLocal()
-    
-
+    print(antwortdict)
     for antwort in antwortdict:
         neue_antwort = Answer(antwort =antwort["text"],is_correct = antwort["is_correct"],flashcard_id=karteikarten_id)
         db.add(neue_antwort)
@@ -339,7 +399,6 @@ def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
 
 def delete_flashcard(flashcard_id: int):
     db = SessionLocal()
-
     # Flashcard abrufen
     flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
 
@@ -362,4 +421,11 @@ def delete_flashcard(flashcard_id: int):
 
 
 if __name__ == '__main__':
-    print(get_user_groups("Mau"))
+    #print(add_subject_to_group("OOP mit deiner Mum","Bango"))
+    #create_flashcard("OOP mit deiner Mum","Bango","Wer ist cool?",[{"text":"deine mum","is_correct":True}])
+    #print(add_answers_to_flashcard("1",[{"text":"Kissen rocken","is_correct":False},{"text":"Kissen pocken","is_correct":False},{"text":"Kissen mocken","is_correct":True}]))
+    #print([user.username for user in get_users()])
+    #print(create_invitation("Hongfa","Mau","Bango"))
+    print(get_invitations("Hongfa"))
+    #print(get_group_name(1))
+    pass
