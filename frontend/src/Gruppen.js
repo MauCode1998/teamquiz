@@ -1,5 +1,6 @@
 import React from "react";
 import  Link from '@mui/joy/Link';
+import { Link as RouterLink } from 'react-router-dom';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import Input from '@mui/joy/Input';
@@ -7,32 +8,24 @@ import Button from '@mui/joy/Button';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Card from '@mui/joy/Card';
 import {useState,useEffect} from 'react';
-import Gruppe from "./Gruppe";
+import api from './api/axios';
+import { useAuth } from './AuthContext';
 
 function Gruppen() {
+    const { user } = useAuth();
     const [alleGruppen,gruppeAktualisieren] = useState([]);
     const [alleEinladungen,einladungenAktualisieren] = useState([]);
     const [neueGruppe,neueGruppeAktualisieren] = useState("");
 
     async function ladeGruppe() {
-
-        const gruppenDatenRequest = await fetch("http://127.0.0.1:8000/get-gruppeninfo", {
-
-            "method":"GET",
-            "headers":{
-                "token":"123456789",
-                "Content-Type":"application/json",
-            },
-            
-            credentials: 'include',
-     
-        mode: 'cors'})
-        const daten = await gruppenDatenRequest.json()
-        const gruppen = daten.content.groups.map(gruppe => gruppe.name);
-        console.log(gruppen)
-        gruppeAktualisieren(gruppen)
-        
-    
+        try {
+            const response = await api.get('/get-gruppeninfo');
+            const gruppen = response.data.content.groups.map(gruppe => gruppe.name);
+            console.log(gruppen)
+            gruppeAktualisieren(gruppen)
+        } catch (error) {
+            console.error('Error loading groups:', error);
+        }
     }
     
     useEffect(()=> {
@@ -42,57 +35,71 @@ function Gruppen() {
     },[]);
 
     async function gruppeErstellen() {
-            console.log(`Gruppe ${neueGruppe} wird gleich erstellt!`)
-    
-            const gruppeErstellenRequest = await fetch("http://127.0.0.1:8000/gruppe-erstellen", {
-                "method":"POST",
-                "headers": {
-                    "token":"123456789",
-                    "Content-Type":"application/json"
-                },
-                "body": JSON.stringify({"gruppen_name":neueGruppe})
-                ,
-                credentials: 'include'
-            })
-    
-            const data = await gruppeErstellenRequest.json();
-            console.log(data)
-    
+        console.log(`Gruppe ${neueGruppe} wird gleich erstellt!`)
+        
+        try {
+            const response = await api.post('/gruppe-erstellen', {
+                "gruppen_name": neueGruppe
+            });
+            console.log(response.data)
             ladeGruppe();
+        } catch (error) {
+            console.error('Error creating group:', error);
         }
+    }
+
+    async function einladungAnnehmen(invitationId) {
+        console.log(`Einladung ${invitationId} wird angenommen`)
+        
+        try {
+            const response = await api.post('/accept-invitation', {
+                "invitation_id": invitationId
+            });
+            console.log(response.data)
+            ladeGruppe(); // Reload groups
+            ladeEinladungen(); // Reload invitations
+        } catch (error) {
+            console.error('Error accepting invitation:', error);
+        }
+    }
+
+    async function einladungAblehnen(invitationId) {
+        console.log(`Einladung ${invitationId} wird abgelehnt`)
+        
+        try {
+            const response = await api.post('/reject-invitation', {
+                "invitation_id": invitationId
+            });
+            console.log(response.data)
+            ladeEinladungen(); // Reload invitations
+        } catch (error) {
+            console.error('Error rejecting invitation:', error);
+        }
+    }
+
+    async function ladeEinladungen() {
+        try {
+            const response = await api.get('/get-invitations');
+            const einladungen = response.data.content
+            console.log(einladungen)
+            einladungenAktualisieren(einladungen);
+        } catch (error) {
+            console.error('Error loading invitations:', error);
+        }
+    }
     
 
 
         useEffect(()=> {
-            async function ladeEinladungen() {
-    
-                const einladungsRequest = await fetch("http://127.0.0.1:8000/get-invitations", {
-    
-                    "method":"GET",
-                    "headers":{
-                        "token":"123456789",
-                        "Content-Type":"application/json",
-                    },
-                    
-                    credentials: 'include',
-       
-                mode: 'cors'})
-                const daten = await einladungsRequest.json()
-                const einladungen = daten.content
-                console.log(einladungen)
-                einladungenAktualisieren(einladungen);
-                
-            }
             ladeEinladungen();
-    
-            },[]);
+        },[]);
     
 
 
     const listItems = alleGruppen.map(einzelGruppe => 
                 
                 <ListItem key = {einzelGruppe} sx={{"&:hover":{backgroundColor: '#DDD'}, height:"2rem", width:"50vw",cursor: 'pointer',borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
-                 <Link href={`/gruppe?name=${encodeURI(einzelGruppe)}`}>{einzelGruppe}</Link>
+                 <Link component={RouterLink} to={`/groups/${encodeURIComponent(einzelGruppe)}`}>{einzelGruppe}</Link>
                 </ListItem>
             
     )
@@ -101,14 +108,14 @@ function Gruppen() {
     const einladungen = alleEinladungen.map((Einladung,index)=> 
                 
         <ListItem key = {index} sx={{"&:hover":{backgroundColor: '#DDD'}, height:"2rem", width:"50vw",cursor: 'pointer',borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
-         <ListItemDecorator>{Einladung.From} lädt dich in die Gruppe {Einladung.To} ein!  </ListItemDecorator> <div style={{marginLeft:"auto",display:"flex"}}><Button variant="outlined" color="primary" sx={{marginRight:"1rem"}}>Annehmen</Button><Button variant="outlined" color="danger" sx={{marginLeft:"auto"}}>Ablehnen</Button></div>
+         <ListItemDecorator>{Einladung.From} lädt dich in die Gruppe {Einladung.To} ein!  </ListItemDecorator> <div style={{marginLeft:"auto",display:"flex"}}><Button variant="outlined" color="primary" sx={{marginRight:"1rem"}} onClick={() => einladungAnnehmen(Einladung.id)}>Annehmen</Button><Button variant="outlined" color="danger" sx={{marginLeft:"auto"}} onClick={() => einladungAblehnen(Einladung.id)}>Ablehnen</Button></div>
         </ListItem>
     
 )
 
     return (
         <div className='parent'>
-        <h1>Willkommen, Maurice.</h1>
+        <h1>Willkommen, {user?.username || 'Benutzer'}.</h1>
         <div className='mittelPage'>
 
             <Card>

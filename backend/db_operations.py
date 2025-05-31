@@ -42,13 +42,18 @@ def create_invitation(from_username,to_username,groupname):
         db.close()
 
 def delete_invitation(invitation_id):
-    pass
+    db = SessionLocal()
+    invitation = db.query(Invitation).filter(Invitation.id == invitation_id).first()
+    if invitation:
+        db.delete(invitation)
+        db.commit()
+    db.close()
 
 def get_invitations(username):
     db = SessionLocal()
     user_id = get_user_id(username)
     invitations = db.query(Invitation).filter(Invitation.to_user_id == user_id).all()
-    invitation_list = [{"From":get_username_by_id(invitation.from_user_id),"To":get_group_name_by_id(invitation.group_id)} for invitation in invitations]
+    invitation_list = [{"id": invitation.id, "From":get_username_by_id(invitation.from_user_id),"To":get_group_name_by_id(invitation.group_id)} for invitation in invitations]
     db.close()
 
     return invitation_list
@@ -185,8 +190,11 @@ def get_group_id(gruppenname):
     db = SessionLocal()
     group = db.query(Group).filter(Group.name == gruppenname).first()
     if group != None:
-        return group.id
+        group_id = group.id
+        db.close()
+        return group_id
     else:
+        db.close()
         return False
     
 
@@ -240,7 +248,7 @@ def delete_user_from_group(username:str,groupname:str):
         return "Groupname nicht gefunden"
 
     try:
-        zu_loeschende_association = db.query(UserGroupAssociation).filter(UserGroupAssociation.user_id == user_id and UserGroupAssociation.group_id == group_id).first()
+        zu_loeschende_association = db.query(UserGroupAssociation).filter(UserGroupAssociation.user_id == user_id, UserGroupAssociation.group_id == group_id).first()
         db.delete(zu_loeschende_association)
         db.commit()
         db.close()
@@ -255,16 +263,18 @@ def is_user_in_group(username,groupname):
     group = db.query(Group).filter(Group.name == groupname).first()
 
     if group != None:
-        if username not in [userassociation.user.username for userassociation in group.group_users]:
-            return False
-        else:
-            return "Gruppe wurde nicht gefunden"
+        result = username in [userassociation.user.username for userassociation in group.group_users]
+        db.close()
+        return result
+    else:
+        db.close()
+        return False  # Changed from string to False for consistency
         
 
 def is_subject_in_group(subjectname,group_id):
     db = SessionLocal()
-    subject = db.query(Subject).filter(Subject.name == subjectname and Subject.group_id == group_id).first()
-
+    subject = db.query(Subject).filter(Subject.name == subjectname, Subject.group_id == group_id).first()
+    print(f"Checking if subject '{subjectname}' exists in group {group_id}: {subject is not None}")
 
     if subject != None:
        db.close()
@@ -280,16 +290,20 @@ def get_group(name):
 
     
     if group != None:
-    
+        subjects = [subjectobject.name for subjectobject in group.subjects]
+        print(f"Group '{name}' has {len(subjects)} subjects: {subjects}")
+        
         group_details = {
         "name":name,
         "id":group.id,
         "users":[userassociation.user.username for userassociation in group.group_users],
-        "subjects": [subjectobject.name for subjectobject in group.subjects]
+        "subjects": subjects
         
     }
+        db.close()
         return group_details
     else:
+        db.close()
         return "Gruppe wurde nicht gefunden"
     
 
@@ -297,52 +311,127 @@ def get_group(name):
 def add_subject_to_group(subjectname,groupname):
     db = SessionLocal()
     group_id = get_group_id(groupname)
-    new_subject = Subject(name=subjectname,group_id=group_id)
+    print(f"Adding subject '{subjectname}' to group '{groupname}' (ID: {group_id})")
     
     if is_subject_in_group(subjectname=subjectname,group_id=group_id):
+        print(f"Subject '{subjectname}' already exists in group '{groupname}'")
+        db.close()
         return "Subject ist bereits in der Gruppe angelegt"
     
     try:
+        new_subject = Subject(name=subjectname,group_id=group_id)
         db.add(new_subject)
         db.commit()
         db.refresh(new_subject)
+        print(f"Successfully created subject '{subjectname}' with ID: {new_subject.id}")
         db.close()
+        return None  # Success
     except Exception as e:
         print("Fehler beim anlegen des Subjects",e)
+        db.rollback()
+        db.close()
+        return f"Fehler: {e}"
 
 
 def delete_subject_from_group(subjectname,group_id):
     db = SessionLocal()
-    zu_loeschendes_subject = db.query(Subject).filter(Subject.name == subjectname and Subject.group_id == group_id).first()
-    
-    if not is_subject_in_group(subjectname=subjectname,group_id=group_id):
-        return "Subject existiert nicht in der Gruppe"
-    
     try:
+        print(f"DEBUG: Deleting subject '{subjectname}' from group_id {group_id}")
+        
+        zu_loeschendes_subject = db.query(Subject).filter(Subject.name == subjectname, Subject.group_id == group_id).first()
+        
+        if not zu_loeschendes_subject:
+            print(f"DEBUG: Subject '{subjectname}' not found in group {group_id}")
+            db.close()
+            return "Subject existiert nicht in der Gruppe"
+        
+        print(f"DEBUG: Found subject to delete: '{zu_loeschendes_subject.name}' (ID: {zu_loeschendes_subject.id})")
+        
         db.delete(zu_loeschendes_subject)
         db.commit()
+        print(f"DEBUG: Successfully deleted subject '{subjectname}'")
         db.close()
+        return "Subject erfolgreich gelöscht"
+        
     except Exception as e:
-        print("Fehler beim anlegen des Subjects",e)
+        db.rollback()
+        db.close()
+        print("Fehler beim löschen des Subjects",e)
+        return f"Fehler: {e}"
 
-def get_subject_id(subjectname,groupname):
-    
+def update_subject_name(old_subjectname, new_subjectname, group_id):
+    """Update/rename a subject in a group"""
+    db = SessionLocal()
+    try:
+        print(f"DEBUG: Updating subject '{old_subjectname}' to '{new_subjectname}' in group_id {group_id}")
+        
+        # Check if subject exists
+        subject = db.query(Subject).filter(Subject.name == old_subjectname, Subject.group_id == group_id).first()
+        if not subject:
+            print(f"DEBUG: Subject '{old_subjectname}' not found in group {group_id}")
+            db.close()
+            return "Subject existiert nicht in der Gruppe"
+        
+        print(f"DEBUG: Found subject with current name: '{subject.name}', ID: {subject.id}")
+        
+        # Check if new name already exists in group (excluding current subject)
+        existing_subject = db.query(Subject).filter(
+            Subject.name == new_subjectname, 
+            Subject.group_id == group_id,
+            Subject.id != subject.id  # Exclude current subject
+        ).first()
+        if existing_subject:
+            print(f"DEBUG: Subject with name '{new_subjectname}' already exists (ID: {existing_subject.id})")
+            db.close()
+            return "Ein Fach mit diesem Namen existiert bereits in der Gruppe"
+        
+        # Update subject name - use merge to ensure proper update
+        old_name = subject.name
+        subject.name = new_subjectname
+        db.merge(subject)  # Use merge instead of direct commit
+        db.commit()
+        
+        # Verify the update
+        updated_subject = db.query(Subject).filter(Subject.id == subject.id).first()
+        print(f"DEBUG: After update - Subject ID {subject.id} now has name: '{updated_subject.name}'")
+        
+        db.close()
+        return "Subject erfolgreich umbenannt"
+        
+    except Exception as e:
+        db.rollback()
+        db.close()
+        print("Fehler beim umbenennen des Subjects", e)
+        return f"Fehler: {e}"
+
+def get_subject_id(subjectname, groupname):
     db = SessionLocal()
     group_id = get_group_id(groupname)
-    
-    id = db.query(Subject).filter(Subject.name == subjectname and Subject.group_id == group_id).first()
 
-    if id != None:
-        return id.id
+    subject = db.query(Subject).filter(
+    Subject.name == subjectname,
+    Subject.group_id == group_id
+        ).first()
+
+
+    if subject is not None:
+        subject_id = subject.id
+        db.close()
+        return subject_id
     else:
+        db.close()
         return "Subject konnte nicht gefunden werden"
 
 def get_subject_cards(subjectname, groupname):
     db = SessionLocal()
     group_id = get_group_id(groupname)  # Gruppe-ID holen
+    print(f"Looking for subject '{subjectname}' in group with ID: {group_id}")
+    
     subject = db.query(Subject).filter(Subject.name == subjectname, Subject.group_id == group_id).first()
+    print(f"Subject found: {subject}")
 
     if not subject:
+        print(f"Subject '{subjectname}' not found in group '{groupname}' (ID: {group_id})")
         db.close()
         return False
 
@@ -376,7 +465,7 @@ def add_answers_to_flashcard(karteikarten_id:int,antwortdict:dict):
     db = SessionLocal()
     print(antwortdict)
     for antwort in antwortdict:
-        neue_antwort = Answer(antwort =antwort["text"],is_correct = antwort["is_correct"],flashcard_id=karteikarten_id)
+        neue_antwort = Answer(antwort=antwort["text"], is_correct=antwort["is_correct"], flashcard_id=karteikarten_id)
         db.add(neue_antwort)
 
     db.commit()
@@ -388,15 +477,34 @@ def add_answers_to_flashcard(karteikarten_id:int,antwortdict:dict):
 ##### Karteikarten Funktionen #####
 def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
     db = SessionLocal()
-    subject_id = get_subject_id(subjectname=subjectname,groupname=groupname)
-    karteikarte = Flashcard(question=frage,subject_id=subject_id)
-    
-    db.add(karteikarte)
-    db.commit()
-    db.refresh(karteikarte)
-    db.close()
+    try:
+        subject_id = get_subject_id(subjectname=subjectname,groupname=groupname)
+        if isinstance(subject_id, str):  # Subject doesn't exist, create it
+            print(f"Subject '{subjectname}' doesn't exist in group '{groupname}', creating it...")
+            create_result = add_subject_to_group(subjectname, groupname)
+            if create_result:
+                print(f"Subject creation failed: {create_result}")
+                db.close()
+                return False
+            subject_id = get_subject_id(subjectname=subjectname,groupname=groupname)
+            if isinstance(subject_id, str):  # Still failed
+                db.close()
+                return False
+            
+        karteikarte = Flashcard(question=frage,subject_id=subject_id)
+        
+        db.add(karteikarte)
+        db.commit()
+        db.refresh(karteikarte)
+        add_answers_to_flashcard(karteikarte.id,antwortdict)
+        db.close()
+        return True
+    except Exception as e:
+        print(f"Error creating flashcard: {e}")
+        db.close()
+        return False
 
-    add_answers_to_flashcard(karteikarte.id,antwortdict)
+    
 
 
 
@@ -431,6 +539,10 @@ if __name__ == '__main__':
     #print(create_invitation("Hongfa","Mau","Bango"))
     #print(get_invitations("Hongfa"))
     #print(get_group_name(1))
+    #create_invitation("Hongfa","Mau","OOP mit Java")
+    add_user_to_group("Hongfa","blabubb")
     
-    print(get_group("Bango"))
+    #print(get_group("Bango"))
+    #create_flashcard("")
+    #print(get_subject_cards("H","Lach"))
     pass

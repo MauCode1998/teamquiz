@@ -9,53 +9,53 @@ import AccordionSummary from '@mui/joy/AccordionSummary';
 import Accordion from '@mui/joy/Accordion';
 import Logo from './logo.jpeg';
 import AccordionGroup from '@mui/joy/AccordionGroup';
+import { useAuth } from './AuthContext';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
 
 function Header() {
+    const { user, logout, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
 
-
-    const loginkomponente = <Link sx={{marginLeft:"1rem",marginRight:"1rem"}} color="white" underline="none" href="/login">
-                                Login
-                            </Link>
-                           
-
-   
-    
-
-
-    const eingeloggt = <p>Mau</p>
-
-    const [loggedIn,setLogin] = useState(loginkomponente);
-    
-    const toggle = true;
-
-    useEffect(() => {
-        if (toggle) {
-            setLogin(eingeloggt)
-        } else {
-            setLogin(loginkomponente)
-        }
-       
-},[])
-   
+    const handleLogout = async () => {
+        await logout();
+        navigate('/');
+    };
 
     return(
         <header >
-            <Link color="neutral" underline="none" href="/gruppen">
+            <Link component={RouterLink} to="/groups" color="neutral" underline="none">
                 <img src={Logo} style={{width:"15rem",height:"12rem"}} ></img>
             </Link>
             
             <div id='headerlinks'>
-                <Link sx={{marginLeft:"1rem",marginRight:"1rem"}} color="white" underline="none" href="/gruppen">
-                Startseite
-                </Link>
+                {isAuthenticated && (
+                    <Link component={RouterLink} to="/groups" sx={{marginLeft:"1rem",marginRight:"1rem"}} color="white" underline="none">
+                        Startseite
+                    </Link>
+                )}
                 
-                {loggedIn}
-
-               
+                {isAuthenticated ? (
+                    <>
+                        <span style={{color: 'white', marginLeft: '1rem', marginRight: '1rem'}}>
+                            {user?.username}
+                        </span>
+                        <Button 
+                            variant="outlined" 
+                            color="neutral"
+                            size="sm"
+                            sx={{marginLeft:"1rem",marginRight:"1rem"}}
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </Button>
+                    </>
+                ) : (
+                    <Link component={RouterLink} to="/" sx={{marginLeft:"1rem",marginRight:"1rem"}} color="white" underline="none">
+                        Login
+                    </Link>
+                )}
             </div>
-            
-            
         </header>
     );
 }

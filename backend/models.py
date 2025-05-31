@@ -1,13 +1,19 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    password = Column(String)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
     user_groups = relationship("UserGroupAssociation", back_populates="user")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 class Group(Base):
     __tablename__ = "groups"
@@ -37,7 +43,7 @@ class Invitation(Base):
 class Subject(Base):
     __tablename__ = "subjects"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    name = Column(String, index=True)  # Removed unique=True
     group_id = Column(Integer, ForeignKey("groups.id"), index=True)
     group = relationship("Group", back_populates="subjects")
     flashcards = relationship("Flashcard", back_populates="subject", cascade="all, delete-orphan")
@@ -57,3 +63,12 @@ class Answer(Base):
     is_correct = Column(Boolean, default=False)
     flashcard_id = Column(Integer, ForeignKey("flashcards.id"), index=True)
     flashcard = relationship("Flashcard", back_populates="answers")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    expires_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User", back_populates="refresh_tokens")
