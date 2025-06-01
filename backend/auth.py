@@ -95,3 +95,19 @@ def validate_refresh_token(token: str, db: Session) -> Optional[User]:
         return None
     
     return refresh_token.user
+
+def verify_token_websocket(token: str, db: Session) -> Optional[User]:
+    """Verify JWT token for WebSocket connections - returns User or None"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+    except JWTError:
+        return None
+    
+    user = db.query(User).filter(User.username == username).first()
+    if user is None or not user.is_active:
+        return None
+    
+    return user

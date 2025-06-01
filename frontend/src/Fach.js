@@ -27,6 +27,7 @@ import DialogContent from '@mui/joy/DialogContent';
 import DialogActions from '@mui/joy/DialogActions';
 import Alert from '@mui/joy/Alert';
 import api from './api/axios';
+import OnlineUsers from './components/OnlineUsers';
 
 
 
@@ -37,7 +38,7 @@ function Fach() {
     
     const fachname = subject;
     const gruppenname = groupName;
-    const alleTeilnehmer = ["Mau","Hongfa"];
+    // Remove hardcoded users - now handled by OnlineUsers component
     const [alleKarteikarten,setAlleKarteikarten] = useState([]);
     const kartenId = "1"
     const gameid = "2"
@@ -59,6 +60,22 @@ function Fach() {
     const [newSubjectName, setNewSubjectName] = useState("");
     const [renameError, setRenameError] = useState("");
     const [deleteError, setDeleteError] = useState("");
+    
+    // States for flashcard management
+    const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showDeleteCardDialog, setShowDeleteCardDialog] = useState(false);
+    const [selectedCard, setSelectedCard] = useState(null);
+    const [editCardData, setEditCardData] = useState({
+        frage: "",
+        antworten: [
+            { text: "", is_correct: false },
+            { text: "", is_correct: false },
+            { text: "", is_correct: false },
+            { text: "", is_correct: true }
+        ]
+    });
+    const [editError, setEditError] = useState("");
+    const [deleteCardError, setDeleteCardError] = useState("");
    
     async function karteikarteErstellen() {
         console.log(`Karte wird gleich erstellt!`)
@@ -207,6 +224,64 @@ function Fach() {
         }
     }
 
+    async function karteikarteBearbeiten() {
+        console.log('Karteikarte bearbeiten:', selectedCard);
+        setEditError("");
+        
+        // Validate inputs
+        if (!editCardData.frage.trim()) {
+            setEditError("Bitte geben Sie eine Frage ein");
+            return;
+        }
+        
+        const filledAnswers = editCardData.antworten.filter(a => a.text.trim());
+        if (filledAnswers.length !== 4) {
+            setEditError("Bitte füllen Sie alle 4 Antwortfelder aus");
+            return;
+        }
+
+        try {
+            const response = await api.put('/flashcard/update', {
+                flashcard_id: selectedCard.flashcard_id,
+                frage: editCardData.frage,
+                antworten: editCardData.antworten
+            });
+            console.log("Update response:", response.data);
+            
+            // Close dialog and reload cards
+            setShowEditDialog(false);
+            getCards();
+            
+        } catch (error) {
+            console.error('Error updating flashcard:', error);
+            const errorMessage = error.response?.data?.detail || 'Fehler beim Bearbeiten der Karteikarte';
+            setEditError(errorMessage);
+        }
+    }
+    
+    async function karteikarteLoeschen() {
+        console.log('Karteikarte löschen:', selectedCard);
+        setDeleteCardError("");
+        
+        try {
+            const response = await api.delete('/flashcard/delete', {
+                data: {
+                    flashcard_id: selectedCard.flashcard_id
+                }
+            });
+            console.log("Delete flashcard response:", response.data);
+            
+            // Close dialog and reload cards
+            setShowDeleteCardDialog(false);
+            getCards();
+            
+        } catch (error) {
+            console.error('Error deleting flashcard:', error);
+            const errorMessage = error.response?.data?.detail || 'Fehler beim Löschen der Karteikarte';
+            setDeleteCardError(errorMessage);
+        }
+    }
+
 
     useEffect(() => {
         if (fachname && gruppenname) {
@@ -214,15 +289,51 @@ function Fach() {
         }
     },[fachname,gruppenname])
 
-    const teilnehmerItems = alleTeilnehmer.map((einzelTeilnehmer, index) => 
-        <ListItem key={index} sx={{"&:hover":{backgroundColor: '#DDD'},borderRadius: '1rem',display:"flex",underline:'hidden',textDecoration:'none'}}>
-         <ListItemDecorator>{einzelTeilnehmer}</ListItemDecorator>
-        </ListItem>)
+    // Remove hardcoded teilnehmerItems - now handled by OnlineUsers component
 
     const kartenHTML = alleKarteikarten.map((karteikarte,index) =>
         <li key = {karteikarte.question}>
             <Accordion>
-                <AccordionSummary>{karteikarte.question}</AccordionSummary>
+                <AccordionSummary>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <span>{karteikarte.question}</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Button 
+                                size="sm" 
+                                variant="soft" 
+                                color="primary"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCard(karteikarte);
+                                    setEditCardData({
+                                        frage: karteikarte.question,
+                                        antworten: karteikarte.answers.map(a => ({
+                                            text: a.text,
+                                            is_correct: a.is_correct
+                                        }))
+                                    });
+                                    setEditError("");
+                                    setShowEditDialog(true);
+                                }}
+                            >
+                                Bearbeiten
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                variant="soft" 
+                                color="danger"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCard(karteikarte);
+                                    setDeleteCardError("");
+                                    setShowDeleteCardDialog(true);
+                                }}
+                            >
+                                Löschen
+                            </Button>
+                        </div>
+                    </div>
+                </AccordionSummary>
                 <AccordionDetails>
                     <List>
                         {karteikarte.answers.map((answer, answerIndex) => (
@@ -251,7 +362,7 @@ function Fach() {
             
             <Card sx={{ display:"flex", cursor:"pointer",alignItems:"center",justifyContent:"center"}}>
             <CardCover sx={{overflow:"hidden"}}>
-            <Link href={`/lobby?gameid=${gameid}`}>
+            <Link href={`/lobby?group=${encodeURIComponent(gruppenname)}&subject=${encodeURIComponent(fachname)}`}>
                     <img
                         src={Bild}
                         
@@ -263,19 +374,7 @@ function Fach() {
                 
             </Card>
 
-            <Card>
-                
-                <h3>🟢 Online</h3>
-                <Divider></Divider>
-                <Card  sx = {{backgroundColor:"#FFF", height:"100%"}}>
-                    <List aria-labelledby="decorated-list-demo">
-                        {teilnehmerItems}
-                    </List>
-                </Card>
-
-                
-
-            </Card>
+            <OnlineUsers groupName={gruppenname} showInviteButtons={false} />
            
             <Card>
             <h2 className = 'mainPageUeberschrift'>Alle Fragen ({gesamtAnzahlFragen})</h2>
@@ -438,7 +537,132 @@ function Fach() {
                     <Button variant="outlined" onClick={() => setShowDeleteDialog(false)}>
                         Abbrechen
                     </Button>
-                    <Button color="danger" onClick={fachLoeschen}>
+                    <Button id='fachLoeschenButton' color="danger" onClick={fachLoeschen}>
+                        Löschen
+                    </Button>
+                </DialogActions>
+            </ModalDialog>
+        </Modal>
+
+        {/* Edit Flashcard Dialog */}
+        <Modal open={showEditDialog} onClose={() => setShowEditDialog(false)}>
+            <ModalDialog sx={{ width: '90%', maxWidth: '600px' }}>
+                <DialogTitle>Karteikarte bearbeiten</DialogTitle>
+                <DialogContent>
+                    {editError && (
+                        <Alert color="danger" sx={{ mb: 2 }}>
+                            {editError}
+                        </Alert>
+                    )}
+                    <FormControl sx={{ mb: 2 }}>
+                        <FormLabel>Frage</FormLabel>
+                        <Input
+                            placeholder="Geben Sie hier die Frage ein"
+                            value={editCardData.frage}
+                            onChange={(e) => {
+                                setEditCardData({
+                                    ...editCardData,
+                                    frage: e.target.value
+                                });
+                                if (editError) setEditError("");
+                            }}
+                        />
+                    </FormControl>
+                    
+                    <Typography level="body-sm" sx={{ mb: 1 }}>
+                        Bearbeiten Sie die Antworten und markieren Sie die richtige:
+                    </Typography>
+                    
+                    <RadioGroup
+                        value={editCardData.antworten.findIndex(a => a.is_correct).toString()}
+                        onChange={(e) => {
+                            const correctIndex = parseInt(e.target.value);
+                            const updatedAntworten = editCardData.antworten.map((answer, index) => ({
+                                ...answer,
+                                is_correct: index === correctIndex
+                            }));
+                            setEditCardData({
+                                ...editCardData,
+                                antworten: updatedAntworten
+                            });
+                        }}
+                    >
+                        {editCardData.antworten.map((answer, index) => (
+                            <Sheet
+                                key={index}
+                                sx={{
+                                    p: 1,
+                                    mb: 1,
+                                    borderRadius: 'sm',
+                                    border: '1px solid',
+                                    borderColor: answer.is_correct ? 'success.outlinedBorder' : 'neutral.outlinedBorder',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                }}
+                            >
+                                <Radio
+                                    value={index.toString()}
+                                    size="sm"
+                                />
+                                <Input
+                                    placeholder={`Antwort ${index + 1}`}
+                                    value={answer.text}
+                                    onChange={(e) => {
+                                        const updatedAntworten = [...editCardData.antworten];
+                                        updatedAntworten[index].text = e.target.value;
+                                        setEditCardData({
+                                            ...editCardData,
+                                            antworten: updatedAntworten
+                                        });
+                                        if (editError) setEditError("");
+                                    }}
+                                    sx={{ flex: 1 }}
+                                    variant={answer.is_correct ? "soft" : "outlined"}
+                                    color={answer.is_correct ? "success" : "neutral"}
+                                />
+                            </Sheet>
+                        ))}
+                    </RadioGroup>
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" onClick={() => setShowEditDialog(false)}>
+                        Abbrechen
+                    </Button>
+                    <Button color="primary" onClick={karteikarteBearbeiten}>
+                        Speichern
+                    </Button>
+                </DialogActions>
+            </ModalDialog>
+        </Modal>
+
+        {/* Delete Flashcard Dialog */}
+        <Modal open={showDeleteCardDialog} onClose={() => setShowDeleteCardDialog(false)}>
+            <ModalDialog>
+                <DialogTitle>Karteikarte löschen</DialogTitle>
+                <DialogContent>
+                    {deleteCardError && (
+                        <Alert color="danger" sx={{ mb: 2 }}>
+                            {deleteCardError}
+                        </Alert>
+                    )}
+                    <Typography>
+                        Sind Sie sicher, dass Sie diese Karteikarte löschen möchten?
+                    </Typography>
+                    {selectedCard && (
+                        <Typography level="body-sm" sx={{ mt: 1, fontStyle: 'italic' }}>
+                            Frage: "{selectedCard.question}"
+                        </Typography>
+                    )}
+                    <Typography level="body-sm" sx={{ mt: 1 }}>
+                        Diese Aktion kann nicht rückgängig gemacht werden.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" onClick={() => setShowDeleteCardDialog(false)}>
+                        Abbrechen
+                    </Button>
+                    <Button color="danger" onClick={karteikarteLoeschen}>
                         Löschen
                     </Button>
                 </DialogActions>

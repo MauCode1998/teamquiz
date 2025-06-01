@@ -9,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import sqlite3
 import os
+import bcrypt
+from datetime import datetime
 
 @pytest.fixture(scope="session")
 def test_database():
@@ -74,27 +76,20 @@ def server(test_database):
 
 @pytest.fixture
 def driver():
-    """Create WebDriver instance"""
+    """Create WebDriver instance - Safari only, headless mode"""
     driver = None
     
-    # Try Safari first
+    # Only Safari, no fallbacks
     try:
-        driver = webdriver.Safari()
+        # Safari with headless-like configuration
+        safari_options = webdriver.SafariOptions()
+        # Note: Safari doesn't support true headless mode, but we can minimize window interaction
+        driver = webdriver.Safari(options=safari_options)
         driver.implicitly_wait(10)
-        driver.maximize_window()
-        print("✅ Using Safari driver")
+        # Don't maximize window to reduce visual impact
+        print("✅ Using Safari driver (headless-mode)")
     except Exception as safari_error:
-        # Fallback to Chrome
-        try:
-            from selenium.webdriver.chrome.options import Options
-            chrome_options = Options()
-            # chrome_options.add_argument("--headless")  # Uncomment for headless mode
-            driver = webdriver.Chrome(options=chrome_options)
-            driver.implicitly_wait(10)
-            driver.maximize_window()
-            print("✅ Using Chrome driver (Safari unavailable)")
-        except Exception as chrome_error:
-            pytest.skip(f"Could not initialize any browser driver. Safari: {safari_error}. Chrome: {chrome_error}")
+        pytest.skip(f"Safari driver required but unavailable: {safari_error}")
     
     yield driver
     
@@ -143,3 +138,275 @@ def wait_helper():
         "clickable": wait_for_clickable,
         "text": wait_for_text
     }
+
+@pytest.fixture
+def api_create_user(server):
+    """Create user via API endpoints - uses test database automatically"""
+    def _create_user(username, email, password):
+        import requests
+        
+        response = requests.post(f"{server}/register", json={
+            "username": username,
+            "email": email,
+            "password": password,
+            "confirmPassword": password
+        })
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            raise Exception(f"User creation failed: {response.status_code} - {response.text}")
+    
+    return _create_user
+
+@pytest.fixture
+def api_create_group(server):
+    """Create group via API endpoints - uses test database automatically"""
+    def _create_group(group_name, auth_data=None):
+        import requests
+        
+        headers = {}
+        cookies = None
+        if auth_data:
+            headers.update({"Authorization": auth_data["Authorization"]})
+            cookies = auth_data["cookies"]
+        
+        response = requests.post(f"{server}/gruppe-erstellen", 
+            json={"gruppen_name": group_name},
+            headers=headers,
+            cookies=cookies
+        )
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            raise Exception(f"Group creation failed: {response.status_code} - {response.text}")
+    
+    return _create_group
+
+@pytest.fixture  
+def api_create_subject(server):
+    """Create subject via API endpoints - uses test database automatically"""
+    def _create_subject(subject_name, group_name, auth_data=None):
+        import requests
+        
+        headers = {}
+        cookies = None
+        if auth_data:
+            headers.update({"Authorization": auth_data["Authorization"]})
+            cookies = auth_data["cookies"]
+        
+        response = requests.post(f"{server}/fach-erstellen",
+            json={"fach_name": subject_name, "gruppen_name": group_name},
+            headers=headers,
+            cookies=cookies
+        )
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            raise Exception(f"Subject creation failed: {response.status_code} - {response.text}")
+    
+    return _create_subject
+
+@pytest.fixture
+def api_login(server):
+    """Login via API and return auth token"""
+    def _login(username, password):
+        import requests
+        
+        response = requests.post(f"{server}/login", data={
+            "username": username,
+            "password": password
+        })
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            return {
+                "Authorization": f"Bearer {token_data['access_token']}",
+                "cookies": response.cookies
+            }
+        else:
+            raise Exception(f"Login failed: {response.status_code} - {response.text}")
+    
+    return _login
+
+@pytest.fixture
+def api_update_flashcard(server):
+    """Update flashcard via API"""
+    def _update_flashcard(flashcard_id, frage, antworten, auth_data):
+        import requests
+        
+        headers = {}
+        cookies = None
+        if auth_data:
+            headers.update({"Authorization": auth_data["Authorization"]})
+            cookies = auth_data["cookies"]
+        
+        response = requests.put(f"{server}/flashcard/update",
+            json={
+                "flashcard_id": flashcard_id,
+                "frage": frage, 
+                "antworten": antworten
+            },
+            headers=headers,
+            cookies=cookies
+        )
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            raise Exception(f"Flashcard update failed: {response.status_code} - {response.text}")
+    
+    return _update_flashcard
+
+@pytest.fixture  
+def api_delete_flashcard(server):
+    """Delete flashcard via API"""
+    def _delete_flashcard(flashcard_id, auth_data):
+        import requests
+        
+        headers = {}
+        cookies = None
+        if auth_data:
+            headers.update({"Authorization": auth_data["Authorization"]})
+            cookies = auth_data["cookies"]
+        
+        response = requests.delete(f"{server}/flashcard/delete",
+            json={"flashcard_id": flashcard_id},
+            headers=headers,
+            cookies=cookies
+        )
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            raise Exception(f"Flashcard deletion failed: {response.status_code} - {response.text}")
+    
+    return _delete_flashcard
+
+@pytest.fixture
+def login_user_ui(driver, server):
+    """Login user via UI - robust implementation copied from working tests"""
+    def _login(username, password):
+        print(f"🔄 Attempting to login {username}")
+        
+        # First try root page
+        driver.get(f"{server}")
+        time.sleep(1)
+        
+        # Try multiple selectors for username field (Material-UI Joy based)
+        username_selectors = [
+            (By.CSS_SELECTOR, "input[placeholder='Benutzername']"),  # Direct input placeholder
+            (By.XPATH, "//input[@placeholder='Benutzername']"),      # XPath for placeholder
+            (By.CSS_SELECTOR, "input[type='text']"),                 # Any text input
+            (By.CSS_SELECTOR, ".MuiInput-input"),                    # Material-UI Joy input class
+            (By.CSS_SELECTOR, "input"),                              # Any input as last resort
+        ]
+        
+        username_field = None
+        for by_type, selector in username_selectors:
+            try:
+                username_field = WebDriverWait(driver, 2).until(
+                    EC.presence_of_element_located((by_type, selector))
+                )
+                print(f"✅ Found username field with: {by_type} = '{selector}'")
+                break
+            except:
+                continue
+        
+        if not username_field:
+            raise Exception("Username field not found with any selector")
+        
+        # Try multiple selectors for password field (Material-UI Joy based)
+        password_selectors = [
+            (By.CSS_SELECTOR, "input[placeholder='Passwort']"),      # Direct placeholder match
+            (By.XPATH, "//input[@placeholder='Passwort']"),          # XPath for placeholder
+            (By.CSS_SELECTOR, "input[type='password']"),             # Type-based (most reliable)
+            (By.CSS_SELECTOR, ".MuiInput-input[type='password']"),   # Material-UI Joy password class
+        ]
+        
+        password_field = None
+        for by_type, selector in password_selectors:
+            try:
+                password_field = driver.find_element(by_type, selector)
+                print(f"✅ Found password field with: {by_type} = '{selector}'")
+                break
+            except:
+                continue
+        
+        if not password_field:
+            raise Exception("Password field not found with any selector")
+        
+        # Try multiple selectors for submit button (Material-UI Joy based)
+        submit_selectors = [
+            (By.XPATH, "//button[contains(text(), 'Anmelden')]"),    # Exact text match
+            (By.CSS_SELECTOR, ".MuiButton-root"),                   # Material-UI Joy button class
+            (By.CSS_SELECTOR, "button"),                            # Generic button
+            (By.XPATH, "//button[contains(@class, 'MuiButton')]"),  # Any MUI button
+        ]
+        
+        submit_button = None
+        for by_type, selector in submit_selectors:
+            try:
+                submit_button = driver.find_element(by_type, selector)
+                print(f"✅ Found submit button with: {by_type} = '{selector}'")
+                break
+            except:
+                continue
+        
+        if not submit_button:
+            raise Exception("Submit button not found with any selector")
+        
+        # Fill and submit form
+        print("🔄 Filling login form...")
+        username_field.clear()
+        username_field.send_keys(username)
+        password_field.clear() 
+        password_field.send_keys(password)
+        
+        print("🔄 Clicking submit button...")
+        submit_button.click()
+        
+        # Wait for groups page
+        WebDriverWait(driver, 3).until(
+            EC.url_contains("/groups")
+        )
+        print(f"✅ Login successful for {username}")
+    
+    return _login
+
+@pytest.fixture
+def logout_user_ui(driver):
+    """Logout user via cookie deletion - fastest method"""
+    def _logout():
+        driver.delete_all_cookies()
+        driver.refresh()
+    
+    return _logout
+
+@pytest.fixture
+def navigate_to_group(driver, server):
+    """Navigate to specific group page"""
+    def _navigate(group_name):
+        driver.get(f"{server}/groups/{group_name}")
+        
+        # Wait for group page to load - try multiple selectors 
+        try:
+            # Wait for group page specific content
+            WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".mittelPage"))
+            )
+        except:
+            try:
+                # Fallback to group title
+                WebDriverWait(driver, 2).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "h1"))
+                )
+            except:
+                # Last fallback - any Material-UI card
+                WebDriverWait(driver, 2).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, ".MuiCard-root"))
+                )
+    
+    return _navigate

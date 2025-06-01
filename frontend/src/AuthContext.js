@@ -128,6 +128,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const getToken = () => {
+    return Cookies.get('access_token');
+  };
+
   const value = {
     user,
     loading,
@@ -135,6 +139,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!user,
+    token: getToken(),
+    getToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class UserCreate(BaseModel):
@@ -64,3 +64,101 @@ class FlashcardCreate(BaseModel):
         if correct_count != 1:
             raise ValueError('Es muss genau eine richtige Antwort geben')
         return v
+
+class FlashcardUpdate(BaseModel):
+    flashcard_id: int
+    frage: str
+    antworten: list[dict]  # [{"text": "...", "is_correct": true/false}, ...]
+    
+    @field_validator('antworten')
+    def validate_answers(cls, v):
+        if len(v) != 4:
+            raise ValueError('Es müssen genau 4 Antworten angegeben werden')
+        correct_count = sum(1 for answer in v if answer.get('is_correct', False))
+        if correct_count != 1:
+            raise ValueError('Es muss genau eine richtige Antwort geben')
+        return v
+
+class FlashcardDelete(BaseModel):
+    flashcard_id: int
+
+
+# Lobby/Session schemas
+class SessionCreate(BaseModel):
+    subject_name: str
+    group_name: str
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    join_code: str
+    websocket_url: str
+
+
+class ParticipantInfo(BaseModel):
+    user_id: int
+    username: str
+    is_host: bool
+    
+    class Config:
+        from_attributes = True
+
+
+class SubjectInfo(BaseModel):
+    id: int
+    name: str
+    
+    class Config:
+        from_attributes = True
+
+
+class GroupInfo(BaseModel):
+    id: int
+    name: str
+    
+    class Config:
+        from_attributes = True
+
+
+class SessionDetails(BaseModel):
+    id: str
+    subject: SubjectInfo
+    group: GroupInfo
+    host: UserInGroup
+    participants: List[ParticipantInfo]
+    status: str
+    join_code: str
+    created_at: datetime
+    flashcard_count: Optional[int] = 0
+    
+    class Config:
+        from_attributes = True
+
+
+class SessionJoin(BaseModel):
+    join_code: str
+
+
+class InvitationSend(BaseModel):
+    session_id: str
+    invitee_username: str
+
+
+class InvitationResponse(BaseModel):
+    invitation_id: int
+    status: str
+
+
+class PendingInvitation(BaseModel):
+    invitation_id: int
+    session_id: str
+    inviter: str
+    subject: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class SessionStatusUpdate(BaseModel):
+    status: str

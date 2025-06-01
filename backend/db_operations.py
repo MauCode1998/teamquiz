@@ -508,6 +508,42 @@ def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
 
 
 
+def update_flashcard(flashcard_id: int, frage: str, antwortdict: dict):
+    """Update an existing flashcard with new question and answers"""
+    db = SessionLocal()
+    
+    try:
+        # Flashcard abrufen
+        flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
+        
+        if not flashcard:
+            db.close()
+            return f"Fehler: Flashcard mit ID {flashcard_id} wurde nicht gefunden."
+        
+        # Update question
+        flashcard.question = frage
+        
+        # Delete existing answers
+        db.query(Answer).filter(Answer.flashcard_id == flashcard_id).delete()
+        
+        # Add new answers
+        for answer_data in antwortdict:
+            new_answer = Answer(
+                antwort=answer_data["text"],
+                is_correct=answer_data["is_correct"],
+                flashcard_id=flashcard_id
+            )
+            db.add(new_answer)
+        
+        db.commit()
+        return f"Flashcard mit ID {flashcard_id} wurde aktualisiert."
+        
+    except Exception as e:
+        db.rollback()
+        return f"Fehler beim Aktualisieren der Flashcard: {e}"
+    finally:
+        db.close()
+
 def delete_flashcard(flashcard_id: int):
     db = SessionLocal()
     # Flashcard abrufen
