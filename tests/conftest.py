@@ -96,6 +96,33 @@ def driver():
     if driver:
         driver.quit()
 
+def restart_server():
+    """Helper to restart the backend server"""
+    # Kill any existing uvicorn processes
+    subprocess.run(["pkill", "-f", "uvicorn"], capture_output=True)
+    time.sleep(2)
+    
+    # Start new server
+    server_process = subprocess.Popen(
+        ["bash", "-c", "source ../venv/bin/activate && uvicorn app:app --reload --port 8000"],
+        cwd="backend",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    # Wait for server to be ready
+    max_retries = 30
+    for _ in range(max_retries):
+        try:
+            response = requests.get("http://localhost:8000/health")
+            if response.status_code == 200:
+                break
+        except:
+            pass
+        time.sleep(1)
+    
+    return server_process
+
 @pytest.fixture
 def clean_database(test_database):
     """Clean the test database before each test"""

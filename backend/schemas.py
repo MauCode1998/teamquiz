@@ -162,3 +162,87 @@ class PendingInvitation(BaseModel):
 
 class SessionStatusUpdate(BaseModel):
     status: str
+
+
+# Game schemas
+class GameStateResponse(BaseModel):
+    session_id: str
+    current_question_index: int
+    current_flashcard_id: Optional[int]
+    total_score: int
+    max_possible_score: int
+    status: str
+    question_started_at: Optional[datetime]
+    flashcard_count: int
+    
+    class Config:
+        from_attributes = True
+
+
+class QuestionResponse(BaseModel):
+    flashcard_id: int
+    question: str
+    answers: List[dict]  # [{"id": 1, "text": "Answer text"}, ...]
+    question_index: int
+    total_questions: int
+    
+    class Config:
+        from_attributes = True
+
+
+class VoteCreate(BaseModel):
+    session_id: str
+    flashcard_id: int
+    answer_id: int
+
+
+class VoteResponse(BaseModel):
+    user_id: int
+    username: str
+    answer_id: int
+    voted_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class VotesUpdate(BaseModel):
+    flashcard_id: int
+    votes: List[VoteResponse]
+    vote_counts: dict  # {"1": 3, "2": 1, "3": 0, "4": 2}
+
+
+class QuestionResult(BaseModel):
+    flashcard_id: int
+    correct_answer_id: int
+    was_correct: bool
+    points_earned: int
+    total_score: int
+    winning_answer_id: int
+    vote_counts: dict
+
+
+class ChatMessageCreate(BaseModel):
+    session_id: str
+    message: str
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    user_id: int
+    username: str
+    message: str
+    sent_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class GameResult(BaseModel):
+    session_id: str
+    total_score: int
+    max_possible_score: int
+    percentage: float
+    status: str  # "won" or "lost"
+    questions_answered: int
+    total_questions: int

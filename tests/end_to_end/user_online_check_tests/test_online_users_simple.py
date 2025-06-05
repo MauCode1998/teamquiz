@@ -147,7 +147,8 @@ class TestOnlineUsersSimple:
         api_create_user, api_create_group, api_create_subject, api_login,
         login_user_ui, logout_user_ui, navigate_to_group
     ):
-        """Test OnlineUsers component works on Lobby page"""
+        """Test OnlineUsers component works on Lobby page - SKIPPED: OnlineUsers removed from Lobby"""
+        pytest.skip("OnlineUsers component was removed from Lobby page - participants are shown differently")
         print("\n🎬 Starting LOBBY test: Online users on Lobby page")
         
         # === SETUP: Create test data via API ===

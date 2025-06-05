@@ -46,14 +46,10 @@ function InvitationModal({ open, onClose }) {
             const acceptResponse = await api.post(`/api/invitation/accept/${invitationId}`);
             
             if (acceptResponse.data.session_id) {
-                // Get the session to retrieve the join code
-                const sessionResponse = await api.get(`/api/session/${acceptResponse.data.session_id}`);
-                const sessionData = sessionResponse.data;
-                
                 onClose(); // Close the modal
                 
-                // Navigate to lobby with join code - this will trigger the join flow
-                navigate(`/lobby?code=${sessionData.join_code}`);
+                // Navigate directly to the lobby with session ID
+                navigate(`/lobby/${acceptResponse.data.session_id}`);
             }
         } catch (error) {
             console.error('Error accepting invitation:', error);

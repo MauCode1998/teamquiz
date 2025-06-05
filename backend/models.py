@@ -92,6 +92,9 @@ class QuizSession(Base):
     host = relationship("User")
     participants = relationship("SessionParticipant", back_populates="session", cascade="all, delete-orphan")
     invitations = relationship("LobbyInvitation", back_populates="session", cascade="all, delete-orphan")
+    game_state = relationship("GameState", back_populates="session", uselist=False, cascade="all, delete-orphan")
+    votes = relationship("Vote", back_populates="session", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
 
 class SessionParticipant(Base):
@@ -122,3 +125,52 @@ class LobbyInvitation(Base):
     session = relationship("QuizSession", back_populates="invitations")
     inviter = relationship("User", foreign_keys=[inviter_id])
     invitee = relationship("User", foreign_keys=[invitee_id])
+
+
+class GameState(Base):
+    __tablename__ = "game_states"
+    
+    session_id = Column(String, ForeignKey("quiz_sessions.id"), primary_key=True)
+    current_question_index = Column(Integer, default=0)
+    current_flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=True)
+    question_started_at = Column(DateTime, nullable=True)
+    total_score = Column(Integer, default=0)
+    max_possible_score = Column(Integer, default=0)
+    status = Column(String, default="waiting")  # waiting, question_active, question_ended, game_finished
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    session = relationship("QuizSession", back_populates="game_state")
+    current_flashcard = relationship("Flashcard", foreign_keys=[current_flashcard_id])
+
+
+class Vote(Base):
+    __tablename__ = "votes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, ForeignKey("quiz_sessions.id"))
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    answer_id = Column(Integer, ForeignKey("answers.id"))
+    voted_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    session = relationship("QuizSession", back_populates="votes")
+    flashcard = relationship("Flashcard")
+    user = relationship("User")
+    answer = relationship("Answer")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, ForeignKey("quiz_sessions.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String)
+    sent_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    session = relationship("QuizSession", back_populates="chat_messages")
+    user = relationship("User")

@@ -9,7 +9,7 @@ import { useAuth } from '../AuthContext';
 import api from '../api/axios';
 import Alert from '@mui/joy/Alert';
 
-function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null }) {
+function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null, disableWebSocket = false }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [websocket, setWebsocket] = useState(null);
     const [inviteStatus, setInviteStatus] = useState({});
@@ -18,7 +18,7 @@ function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null })
 
     useEffect(() => {
         const token = getToken();
-        if (!token || !groupName) return;
+        if (!token || !groupName || disableWebSocket) return;
 
         // Extract JWT token from cookie format if needed
         let wsToken = token;
@@ -68,7 +68,27 @@ function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null })
             }
             ws.close();
         };
-    }, [getToken, groupName]);
+    }, [getToken, groupName, disableWebSocket]);
+
+    // Fallback: Load online users via API if WebSocket is disabled
+    useEffect(() => {
+        if (disableWebSocket && groupName) {
+            const loadOnlineUsers = async () => {
+                try {
+                    const response = await api.get(`/api/online-users/${groupName}`);
+                    setOnlineUsers(response.data.online_users || []);
+                } catch (error) {
+                    console.error('Error loading online users:', error);
+                }
+            };
+
+            loadOnlineUsers();
+            // Refresh every 5 seconds when WebSocket is disabled
+            const interval = setInterval(loadOnlineUsers, 5000);
+            
+            return () => clearInterval(interval);
+        }
+    }, [groupName, disableWebSocket]);
 
     const handleInvite = async (username) => {
         if (!sessionId) {

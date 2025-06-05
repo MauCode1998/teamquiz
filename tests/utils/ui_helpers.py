@@ -172,8 +172,8 @@ def create_flashcard_ui(driver, question, answers, correct_index):
         # Accordion is closed, need to click to open it
         print("🔄 Opening accordion...")
         accordion_selectors = [
-            (By.XPATH, "//button[contains(text(), 'Frage hinzufügen')]"),  # Material-UI button
-            (By.XPATH, "//*[contains(text(), 'Frage hinzufügen')]"),     # Any element with text
+            (By.XPATH, "//*[contains(text(), 'Frage hinzufügen')]"),     # AccordionSummary with text
+            (By.XPATH, "//button[contains(text(), 'Frage hinzufügen')]"),  # Fallback for button
         ]
         
         accordion_button = None

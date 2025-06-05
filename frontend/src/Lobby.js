@@ -1,160 +1,153 @@
 import React, { useState, useEffect } from "react";
-import  Link from '@mui/joy/Link';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
-import Divider from '@mui/joy/Divider';
-import OnlineUsers from './components/OnlineUsers';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from './api/axios';
 import Alert from '@mui/joy/Alert';
 import Typography from '@mui/joy/Typography';
 import { useAuth } from './AuthContext';
-
-
-
+import FormControl from '@mui/joy/FormControl';
+import FormLabel from '@mui/joy/FormLabel';
+import Input from '@mui/joy/Input';
 
 function Lobby() {
-    const [searchParams] = useSearchParams();
-    const groupName = searchParams.get('group');
-    const subjectName = searchParams.get('subject');
-    const joinCode = searchParams.get('code');
+    const { sessionId } = useParams();
+    const navigate = useNavigate();
     const [sessionData, setSessionData] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [websocket, setWebsocket] = useState(null);
-    const { getToken, user } = useAuth();
+    const { user } = useAuth();
+    const [inviteeUsername, setInviteeUsername] = useState('');
+    const [inviteError, setInviteError] = useState('');
+    const [inviteSuccess, setInviteSuccess] = useState('');
 
+    // Initialize lobby
     useEffect(() => {
-        if (joinCode) {
-            // Join with a code
-            joinSessionWithCode();
-        } else if (groupName && subjectName) {
-            // Create or find session
-            createOrJoinSession();
+        if (sessionId) {
+            loadSession();
         } else {
-            setError('Gruppe oder Fach fehlt in der URL');
+            setError('Session ID fehlt in der URL');
             setLoading(false);
         }
-    }, [groupName, subjectName, joinCode]);
+    }, [sessionId]);
 
-    const joinSessionWithCode = async () => {
+    // Cleanup on browser close/refresh
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionData) {
+                // Use sendBeacon for reliable cleanup even when page closes
+                navigator.sendBeacon(
+                    `/api/lobby/${sessionId}/leave`,
+                    JSON.stringify({})
+                );
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            // Also cleanup when component unmounts normally
+            if (sessionData) {
+                api.post(`/api/lobby/${sessionId}/leave`).catch(() => {});
+            }
+        };
+    }, [sessionData]);
+
+    const loadSession = async () => {
         try {
-            // Join with code
-            const joinResponse = await api.post('/api/session/join', {
-                join_code: joinCode
-            });
+            const response = await api.get(`/api/lobby/${sessionId}`);
+            setSessionData(response.data);
             
-            // Get full session details
-            const sessionId = joinResponse.data.session_id;
-            const detailsResponse = await api.get(`/api/session/${sessionId}`);
+            // Load participants
+            const participantsResponse = await api.get(`/api/lobby/${sessionId}/participants`);
+            setParticipants(participantsResponse.data.participants);
             
-            setSessionData(detailsResponse.data);
-            setParticipants(detailsResponse.data.participants || []);
-            console.log('Session data loaded:', detailsResponse.data);
-            setupWebSocket(sessionId);
             setLoading(false);
         } catch (error) {
-            console.error('Error joining session:', error);
-            setError('Fehler beim Beitreten der Session');
+            console.error('Error loading session:', error);
+            setError('Session nicht gefunden');
             setLoading(false);
         }
     };
 
-    const createOrJoinSession = async () => {
+    // Simple polling for participant updates and game status
+    useEffect(() => {
+        if (!sessionData) return;
+
+        const fetchUpdates = async () => {
+            try {
+                // Get participants
+                const response = await api.get(`/api/lobby/${sessionId}/participants`);
+                setParticipants(response.data.participants);
+                
+                // Check session status
+                const sessionResponse = await api.get(`/api/lobby/${sessionId}`);
+                console.log(`[LOBBY POLL] User: ${user?.username}, Session: ${sessionId}, Status: ${sessionResponse.data.status}`);
+                
+                if (sessionResponse.data.status === 'playing') {
+                    console.log(`[LOBBY REDIRECT] ${user?.username} is being redirected to game!`);
+                    navigate(`/game/${sessionId}`);
+                } else if (sessionResponse.data.status === 'in_progress') {
+                    // Also handle 'in_progress' status
+                    console.log(`[LOBBY REDIRECT] ${user?.username} is being redirected to game (in_progress)!`);
+                    navigate(`/game/${sessionId}`);
+                }
+            } catch (error) {
+                console.error('Error fetching updates:', error);
+            }
+        };
+
+        // Initial fetch
+        fetchUpdates();
+
+        // Poll every 1.5 seconds
+        const interval = setInterval(fetchUpdates, 1500);
+        
+        return () => clearInterval(interval);
+    }, [sessionData, navigate, sessionId]);
+
+    const sendInvitation = async () => {
+        if (!inviteeUsername.trim()) {
+            setInviteError('Bitte geben Sie einen Benutzernamen ein');
+            return;
+        }
+        
+        setInviteError('');
+        setInviteSuccess('');
+        
         try {
-            // Try to create a new session
-            const response = await api.post('/api/session/create', {
-                subject_name: subjectName,
-                group_name: groupName
+            await api.post('/api/invitation/send', {
+                session_id: sessionId,
+                invitee_username: inviteeUsername
             });
             
-            // Get full session details
-            const detailsResponse = await api.get(`/api/session/${response.data.session_id}`);
+            setInviteSuccess(`Einladung an ${inviteeUsername} gesendet!`);
+            setInviteeUsername('');
             
-            setSessionData(detailsResponse.data);
-            setParticipants(detailsResponse.data.participants || []);
-            console.log('Session data loaded (create):', detailsResponse.data);
-            setupWebSocket(response.data.session_id);
-            setLoading(false);
+            // Clear success message after 3 seconds
+            setTimeout(() => setInviteSuccess(''), 3000);
         } catch (error) {
-            console.error('Error with session:', error);
-            if (error.response?.status === 400 && error.response?.data?.detail?.includes('already exists')) {
-                setError('Eine Session für dieses Fach existiert bereits');
+            if (error.response?.data?.detail) {
+                setInviteError(error.response.data.detail);
             } else {
-                setError('Fehler beim Erstellen der Session');
+                setInviteError('Fehler beim Senden der Einladung');
             }
-            setLoading(false);
-        }
-    };
-
-    const setupWebSocket = (sessionId) => {
-        const token = getToken();
-        if (!token) return;
-
-        let wsToken = token;
-        if (token.startsWith('Bearer ')) {
-            wsToken = token.substring(7);
-        }
-
-        const ws = new WebSocket(`ws://localhost:8000/ws/${wsToken}`);
-
-        ws.onopen = () => {
-            console.log('Lobby WebSocket connected');
-            // Join the lobby room
-            ws.send(JSON.stringify({
-                type: 'join_lobby',
-                session_id: sessionId
-            }));
-        };
-
-        ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log('Lobby WebSocket message:', message);
-            
-            if (message.type === 'participant_joined' || message.type === 'participant_left') {
-                // Refresh participants list
-                refreshParticipants(sessionId);
-            } else if (message.type === 'session_started') {
-                // TODO: Navigate to quiz
-                console.log('Session started!');
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('Lobby WebSocket disconnected');
-        };
-
-        ws.onerror = (error) => {
-            console.error('Lobby WebSocket error:', error);
-        };
-
-        setWebsocket(ws);
-    };
-
-    const refreshParticipants = async (sessionId) => {
-        try {
-            const response = await api.get(`/api/session/${sessionId}`);
-            setParticipants(response.data.participants || []);
-            // Update host status if needed
-            if (response.data.host.username !== sessionData?.host?.username) {
-                setSessionData(response.data);
-            }
-        } catch (error) {
-            console.error('Error refreshing participants:', error);
         }
     };
 
     const startQuiz = async () => {
         if (sessionData && sessionData.host.username === user?.username) {
             try {
-                await api.post(`/api/session/start/${sessionData.id}`);
-                // WebSocket will notify all participants
+                await api.post(`/api/lobby/${sessionId}/start`);
+                // Don't navigate immediately - let polling handle it for everyone
+                // This ensures all participants navigate at roughly the same time
             } catch (error) {
-                console.error('Error starting session:', error);
+                console.error('Error starting quiz:', error);
                 setError('Fehler beim Starten der Runde');
             }
         }
@@ -163,28 +156,26 @@ function Lobby() {
     const leaveSession = async () => {
         if (sessionData) {
             try {
-                await api.post(`/api/session/leave/${sessionData.id}`);
-                // Navigate back to subject page
-                window.location.href = `/groups/${sessionData.group.name}/${sessionData.subject.name}`;
+                await api.post(`/api/lobby/${sessionId}/leave`);
+                navigate(`/groups/${sessionData.group.name}`);
             } catch (error) {
                 console.error('Error leaving session:', error);
+                navigate(`/groups/${sessionData.group.name}`);
             }
         }
     };
 
-    // Cleanup WebSocket on unmount
-    useEffect(() => {
-        return () => {
-            if (websocket && websocket.readyState === WebSocket.OPEN) {
-                websocket.send(JSON.stringify({
-                    type: 'leave_lobby',
-                    session_id: sessionData?.id
-                }));
-                websocket.close();
-            }
-        };
-    }, [websocket, sessionData]);
-    
+    if (loading) {
+        return (
+            <div className="parent">
+                <div className='mittelPage'>
+                    <Card>
+                        <Typography>Lade Session...</Typography>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="parent">
@@ -195,91 +186,113 @@ function Lobby() {
                     </Alert>
                 )}
 
-                {loading ? (
-                    <Card>
-                        <Typography>Lade Session...</Typography>
-                    </Card>
-                ) : (
-                    <>
-                        <Card>
-                            <h1 className='mainPageUeberschrift'>Lobby</h1>
-                            <Typography level="body-sm">
-                                Gruppe: {sessionData?.group?.name || groupName} | Fach: {sessionData?.subject?.name || subjectName}
+                <Card>
+                    <h1 className='mainPageUeberschrift'>Lobby</h1>
+                    <Typography level="body-sm">
+                        Gruppe: {sessionData?.group?.name} | Fach: {sessionData?.subject?.name}
+                    </Typography>
+                    {sessionData && (
+                        <>
+                            <Typography level="title-lg" sx={{ mt: 2, mb: 1 }}>
+                                Join Code: <strong>{sessionData.join_code}</strong>
                             </Typography>
-                            {sessionData && (
-                                <>
-                                    <Typography level="title-lg" sx={{ mt: 2, mb: 1 }}>
-                                        Join Code: <strong>{sessionData.join_code}</strong>
-                                    </Typography>
-                                    <Typography level="body-xs">
-                                        Teilen Sie diesen Code mit anderen Spielern
-                                    </Typography>
-                                </>
-                            )}
-                        </Card>
+                            <Typography level="body-xs">
+                                Teilen Sie diesen Code mit anderen Spielern
+                            </Typography>
+                        </>
+                    )}
+                </Card>
 
-                        <Card>
-                            <h2>Beigetreten</h2>
-                            <Card sx={{ backgroundColor: "#FFF", height: "100%" }}>
-                                <List>
-                                    {participants.length > 0 ? (
-                                        participants.map(participant => (
-                                            <ListItem key={participant.user_id}>
-                                                <div>✅</div>
-                                                <ListItemDecorator>
-                                                    {participant.username}
-                                                    {participant.is_host && ' (Host)'}
-                                                </ListItemDecorator>
-                                            </ListItem>
-                                        ))
-                                    ) : (
-                                        <ListItem>
-                                            <ListItemDecorator>
-                                                Warte auf Teilnehmer...
-                                            </ListItemDecorator>
-                                        </ListItem>
-                                    )}
-                                </List>
-                            </Card>
-
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                                {sessionData && sessionData.host.username === user?.username ? (
-                                    <Button
-                                        size="lg"
-                                        onClick={startQuiz}
-                                        fullWidth
-                                        disabled={participants.length < 2}
-                                    >
-                                        Runde starten {participants.length < 2 && '(min. 2 Spieler)'}
-                                    </Button>
-                                ) : (
-                                    <Typography level="body-sm" sx={{ textAlign: 'center', width: '100%', mt: 2 }}>
-                                        Warte auf den Host zum Starten...
-                                    </Typography>
-                                )}
-                                <Button
-                                    size="lg"
-                                    variant="outlined"
-                                    color="danger"
-                                    onClick={leaveSession}
-                                >
-                                    Verlassen
-                                </Button>
-                            </div>
-                        </Card>
-
-                        <OnlineUsers 
-                            groupName={sessionData?.group?.name || groupName} 
-                            showInviteButtons={true}
-                            sessionId={sessionData?.id || sessionData?.session_id}
-                        />
-                    </>
+                {/* Invite section - only for host */}
+                {sessionData && sessionData.host.username === user?.username && (
+                    <Card>
+                        <h3>Spieler einladen</h3>
+                        {inviteError && (
+                            <Alert color="danger" sx={{ mb: 2 }}>
+                                {inviteError}
+                            </Alert>
+                        )}
+                        {inviteSuccess && (
+                            <Alert color="success" sx={{ mb: 2 }}>
+                                {inviteSuccess}
+                            </Alert>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                            <FormControl sx={{ flex: 1 }}>
+                                <FormLabel>Benutzername</FormLabel>
+                                <Input
+                                    placeholder="Benutzername eingeben"
+                                    value={inviteeUsername}
+                                    onChange={(e) => setInviteeUsername(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            sendInvitation();
+                                        }
+                                    }}
+                                />
+                            </FormControl>
+                            <Button
+                                onClick={sendInvitation}
+                                disabled={!inviteeUsername.trim()}
+                            >
+                                Einladen
+                            </Button>
+                        </div>
+                    </Card>
                 )}
+
+                <Card>
+                    <h2>Beigetreten ({participants.length})</h2>
+                    <Card sx={{ backgroundColor: "#FFF", height: "100%" }}>
+                        <List>
+                            {participants.length > 0 ? (
+                                participants.map(participant => (
+                                    <ListItem key={participant.user_id}>
+                                        <div>✅</div>
+                                        <ListItemDecorator>
+                                            {participant.username}
+                                            {participant.is_host && ' (Host)'}
+                                        </ListItemDecorator>
+                                    </ListItem>
+                                ))
+                            ) : (
+                                <ListItem>
+                                    <ListItemDecorator>
+                                        Warte auf Teilnehmer...
+                                    </ListItemDecorator>
+                                </ListItem>
+                            )}
+                        </List>
+                    </Card>
+
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                        {sessionData && sessionData.host.username === user?.username ? (
+                            <Button
+                                size="lg"
+                                onClick={startQuiz}
+                                fullWidth
+                                disabled={participants.length < 1}
+                            >
+                                Runde starten
+                            </Button>
+                        ) : (
+                            <Typography level="body-sm" sx={{ textAlign: 'center', width: '100%', mt: 2 }}>
+                                Warte auf den Host zum Starten...
+                            </Typography>
+                        )}
+                        <Button
+                            size="lg"
+                            variant="outlined"
+                            color="danger"
+                            onClick={leaveSession}
+                        >
+                            Verlassen
+                        </Button>
+                    </div>
+                </Card>
             </div>
         </div>
     );
-};
+}
 
-
-
-export default Lobby
+export default Lobby;

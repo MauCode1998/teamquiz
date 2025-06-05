@@ -1,5 +1,6 @@
 import React, { useState,useEffect } from "react";
 import  Link from '@mui/joy/Link';
+import { Link as RouterLink } from 'react-router-dom';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
@@ -76,6 +77,9 @@ function Fach() {
     });
     const [editError, setEditError] = useState("");
     const [deleteCardError, setDeleteCardError] = useState("");
+    
+    // State for lobby creation
+    const [creatingLobby, setCreatingLobby] = useState(false);
    
     async function karteikarteErstellen() {
         console.log(`Karte wird gleich erstellt!`)
@@ -282,6 +286,25 @@ function Fach() {
         }
     }
 
+    async function startLobby() {
+        setCreatingLobby(true);
+        
+        try {
+            const response = await api.post('/api/lobby/create', {
+                subject_name: fachname,
+                group_name: gruppenname
+            });
+            
+            const sessionId = response.data.session.id;
+            navigate(`/lobby/${sessionId}`);
+            
+        } catch (error) {
+            console.error('Error creating lobby:', error);
+            alert('Fehler beim Erstellen der Lobby: ' + (error.response?.data?.detail || 'Unbekannter Fehler'));
+        } finally {
+            setCreatingLobby(false);
+        }
+    }
 
     useEffect(() => {
         if (fachname && gruppenname) {
@@ -362,16 +385,40 @@ function Fach() {
             
             <Card sx={{ display:"flex", cursor:"pointer",alignItems:"center",justifyContent:"center"}}>
             <CardCover sx={{overflow:"hidden"}}>
-            <Link href={`/lobby?group=${encodeURIComponent(gruppenname)}&subject=${encodeURIComponent(fachname)}`}>
+                <Button
+                    onClick={startLobby}
+                    disabled={creatingLobby}
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        p: 0,
+                        border: 'none',
+                        borderRadius: 0,
+                        background: 'transparent',
+                        '&:hover': { background: 'rgba(0,0,0,0.1)' }
+                    }}
+                >
                     <img
                         src={Bild}
-                        
                         loading="lazy"
-                        alt=""
+                        alt="Lobby starten"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-            </Link>
+                    {creatingLobby && (
+                        <Typography 
+                            sx={{ 
+                                position: 'absolute', 
+                                color: 'white', 
+                                backgroundColor: 'rgba(0,0,0,0.7)', 
+                                padding: '8px 16px', 
+                                borderRadius: '4px' 
+                            }}
+                        >
+                            Lobby wird erstellt...
+                        </Typography>
+                    )}
+                </Button>
             </CardCover>
-                
             </Card>
 
             <OnlineUsers groupName={gruppenname} showInviteButtons={false} />

@@ -4,6 +4,7 @@ import Footer from './Footer.js';
 import Gruppe from './Gruppe.js';
 import Gruppen from './Gruppen.js';
 import Lobby from './Lobby.js';
+import Game from './Game.js';
 import Karte from './Karte.js';
 import React from 'react';
 import LoginBox from './LoginBox.js';
@@ -42,9 +43,14 @@ function App() {
                 <Karte/>
               </ProtectedRoute>
             }/>
-            <Route path="/lobby" element={
+            <Route path="/lobby/:sessionId" element={
               <ProtectedRoute>
                 <Lobby/>
+              </ProtectedRoute>
+            }/>
+            <Route path="/game/:sessionId" element={
+              <ProtectedRoute>
+                <Game/>
               </ProtectedRoute>
             }/>
           </Routes>

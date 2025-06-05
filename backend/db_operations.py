@@ -1,6 +1,8 @@
 from database import SessionLocal,engine,Base
-from models import User,Group,Invitation,Flashcard,Answer,UserGroupAssociation,Subject
+from models import User,Group,Invitation,Flashcard,Answer,UserGroupAssociation,Subject,QuizSession,SessionParticipant,LobbyInvitation,GameState,Vote,ChatMessage
 from sqlalchemy.orm import Session
+from datetime import datetime
+import random
 
 Base.metadata.create_all(bind=engine)
 
@@ -342,7 +344,6 @@ def delete_subject_from_group(subjectname,group_id):
         
         if not zu_loeschendes_subject:
             print(f"DEBUG: Subject '{subjectname}' not found in group {group_id}")
-            db.close()
             return "Subject existiert nicht in der Gruppe"
         
         print(f"DEBUG: Found subject to delete: '{zu_loeschendes_subject.name}' (ID: {zu_loeschendes_subject.id})")
@@ -350,14 +351,14 @@ def delete_subject_from_group(subjectname,group_id):
         db.delete(zu_loeschendes_subject)
         db.commit()
         print(f"DEBUG: Successfully deleted subject '{subjectname}'")
-        db.close()
         return "Subject erfolgreich gelöscht"
         
     except Exception as e:
         db.rollback()
-        db.close()
         print("Fehler beim löschen des Subjects",e)
         return f"Fehler: {e}"
+    finally:
+        db.close()
 
 def update_subject_name(old_subjectname, new_subjectname, group_id):
     """Update/rename a subject in a group"""
@@ -369,7 +370,6 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
         subject = db.query(Subject).filter(Subject.name == old_subjectname, Subject.group_id == group_id).first()
         if not subject:
             print(f"DEBUG: Subject '{old_subjectname}' not found in group {group_id}")
-            db.close()
             return "Subject existiert nicht in der Gruppe"
         
         print(f"DEBUG: Found subject with current name: '{subject.name}', ID: {subject.id}")
@@ -382,7 +382,6 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
         ).first()
         if existing_subject:
             print(f"DEBUG: Subject with name '{new_subjectname}' already exists (ID: {existing_subject.id})")
-            db.close()
             return "Ein Fach mit diesem Namen existiert bereits in der Gruppe"
         
         # Update subject name - use merge to ensure proper update
@@ -394,15 +393,14 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
         # Verify the update
         updated_subject = db.query(Subject).filter(Subject.id == subject.id).first()
         print(f"DEBUG: After update - Subject ID {subject.id} now has name: '{updated_subject.name}'")
-        
-        db.close()
         return "Subject erfolgreich umbenannt"
         
     except Exception as e:
         db.rollback()
-        db.close()
         print("Fehler beim umbenennen des Subjects", e)
         return f"Fehler: {e}"
+    finally:
+        db.close()
 
 def get_subject_id(subjectname, groupname):
     db = SessionLocal()
@@ -484,11 +482,9 @@ def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
             create_result = add_subject_to_group(subjectname, groupname)
             if create_result:
                 print(f"Subject creation failed: {create_result}")
-                db.close()
                 return False
             subject_id = get_subject_id(subjectname=subjectname,groupname=groupname)
             if isinstance(subject_id, str):  # Still failed
-                db.close()
                 return False
             
         karteikarte = Flashcard(question=frage,subject_id=subject_id)
@@ -497,12 +493,12 @@ def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
         db.commit()
         db.refresh(karteikarte)
         add_answers_to_flashcard(karteikarte.id,antwortdict)
-        db.close()
         return True
     except Exception as e:
         print(f"Error creating flashcard: {e}")
-        db.close()
         return False
+    finally:
+        db.close()
 
     
 
@@ -546,20 +542,533 @@ def update_flashcard(flashcard_id: int, frage: str, antwortdict: dict):
 
 def delete_flashcard(flashcard_id: int):
     db = SessionLocal()
-    # Flashcard abrufen
-    flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
-
-    if not flashcard:
-        db.close()
-        return f"Fehler: Flashcard mit ID {flashcard_id} wurde nicht gefunden."
-
     try:
+        # Flashcard abrufen
+        flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
+        
+        if not flashcard:
+            return f"Fehler: Flashcard mit ID {flashcard_id} wurde nicht gefunden."
+        
         db.delete(flashcard) 
         db.commit()
         return f"Flashcard mit ID {flashcard_id} wurde gelöscht."
     except Exception as e:
         db.rollback()
         return f"Fehler beim Löschen der Flashcard: {e}"
+    finally:
+        db.close()
+
+
+
+
+
+##### GAME OPERATIONS #####
+
+def create_game_state(session_id: str) -> dict:
+    """Create initial game state for a session"""
+    db = SessionLocal()
+    try:
+        # Get session to calculate max possible score
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        if not session:
+            return None
+            
+        # Count flashcards for max score calculation
+        flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
+        max_possible_score = flashcard_count * 100  # 100 points per question
+        
+        game_state = GameState(
+            session_id=session_id,
+            max_possible_score=max_possible_score,
+            status="waiting"
+        )
+        
+        db.add(game_state)
+        db.commit()
+        db.refresh(game_state)
+        
+        # Convert to dictionary before closing session
+        return {
+            "session_id": game_state.session_id,
+            "current_question_index": game_state.current_question_index,
+            "current_flashcard_id": game_state.current_flashcard_id,
+            "total_score": game_state.total_score,
+            "max_possible_score": game_state.max_possible_score,
+            "status": game_state.status,
+            "question_started_at": game_state.question_started_at,
+            "started_at": game_state.started_at
+        }
+    finally:
+        db.close()
+
+
+def start_game(session_id: str) -> dict:
+    """Start the game and prepare first question"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            # Create new game state
+            session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+            if not session:
+                return {"error": "Session nicht gefunden"}
+                
+            flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
+            max_possible_score = flashcard_count * 100
+            
+            game_state = GameState(
+                session_id=session_id,
+                max_possible_score=max_possible_score,
+                status="waiting"
+            )
+            db.add(game_state)
+            db.commit()
+            db.refresh(game_state)
+            
+        # Get all flashcards for this session's subject
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        flashcards = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).all()
+        
+        if not flashcards:
+            return {"error": "Keine Karteikarten gefunden"}
+            
+        # Start with first flashcard
+        first_flashcard = flashcards[0]
+        game_state.status = "question_active"
+        game_state.started_at = datetime.utcnow()
+        game_state.current_flashcard_id = first_flashcard.id
+        game_state.current_question_index = 0
+        game_state.question_started_at = datetime.utcnow()
+        
+        db.commit()
+        
+        # Convert to dictionary before closing session
+        game_state_dict = {
+            "session_id": game_state.session_id,
+            "current_question_index": game_state.current_question_index,
+            "current_flashcard_id": game_state.current_flashcard_id,
+            "total_score": game_state.total_score,
+            "max_possible_score": game_state.max_possible_score,
+            "status": game_state.status,
+            "question_started_at": game_state.question_started_at.isoformat() if game_state.question_started_at else None,
+            "started_at": game_state.started_at.isoformat() if game_state.started_at else None,
+            "flashcard_count": len(flashcards)
+        }
+        
+        return {
+            "game_state": game_state_dict,
+            "question": prepare_question_data(first_flashcard, 0, len(flashcards)),
+            "flashcard_count": len(flashcards)
+        }
+    finally:
+        db.close()
+
+
+def prepare_question_data(flashcard: Flashcard, question_index: int, total_questions: int) -> dict:
+    """Prepare question data for frontend (without revealing correct answer)"""
+    answers = [{"id": answer.id, "text": answer.antwort} for answer in flashcard.answers]
+    
+    return {
+        "flashcard_id": flashcard.id,
+        "question": flashcard.question,
+        "answers": answers,
+        "question_index": question_index,
+        "total_questions": total_questions
+    }
+
+
+def cast_vote(session_id: str, user_id: int, flashcard_id: int, answer_id: int) -> int:
+    """Cast or update a user's vote for current question"""
+    db = SessionLocal()
+    try:
+        # Check if user already voted for this question
+        existing_vote = db.query(Vote).filter(
+            Vote.session_id == session_id,
+            Vote.user_id == user_id,
+            Vote.flashcard_id == flashcard_id
+        ).first()
+        
+        if existing_vote:
+            # Update existing vote
+            existing_vote.answer_id = answer_id
+            existing_vote.voted_at = datetime.utcnow()
+            db.commit()
+            vote_id = existing_vote.id
+            return vote_id
+        else:
+            # Create new vote
+            vote = Vote(
+                session_id=session_id,
+                user_id=user_id,
+                flashcard_id=flashcard_id,
+                answer_id=answer_id
+            )
+            db.add(vote)
+            db.commit()
+            db.refresh(vote)
+            vote_id = vote.id
+            return vote_id
+    finally:
+        db.close()
+
+
+def get_question_votes(session_id: str, flashcard_id: int) -> dict:
+    """Get all votes for current question with counts"""
+    db = SessionLocal()
+    try:
+        votes = db.query(Vote).filter(
+            Vote.session_id == session_id,
+            Vote.flashcard_id == flashcard_id
+        ).all()
+        
+        # Count votes per answer
+        vote_counts = {}
+        vote_details = []
+        
+        for vote in votes:
+            # Count votes
+            if str(vote.answer_id) not in vote_counts:
+                vote_counts[str(vote.answer_id)] = 0
+            vote_counts[str(vote.answer_id)] += 1
+            
+            # Vote details with username
+            user = db.query(User).filter(User.id == vote.user_id).first()
+            vote_details.append({
+                "user_id": vote.user_id,
+                "username": user.username if user else "Unknown",
+                "answer_id": vote.answer_id,
+                "voted_at": vote.voted_at.isoformat() if vote.voted_at else None
+            })
+        
+        return {
+            "flashcard_id": flashcard_id,
+            "votes": vote_details,
+            "vote_counts": vote_counts
+        }
+    finally:
+        db.close()
+
+
+def end_question(session_id: str) -> dict:
+    """End current question and calculate results"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            return {"error": "Spielstatus nicht gefunden"}
+            
+        flashcard = db.query(Flashcard).filter(Flashcard.id == game_state.current_flashcard_id).first()
+        if not flashcard:
+            return {"error": "Karteikarte nicht gefunden"}
+            
+        # Get correct answer
+        correct_answer = next((answer for answer in flashcard.answers if answer.is_correct), None)
+        if not correct_answer:
+            return {"error": "Keine richtige Antwort gefunden"}
+            
+        # Get votes for this question
+        votes_data = get_question_votes(session_id, flashcard.id)
+        vote_counts = votes_data["vote_counts"]
+        
+        # Determine winning answer (most votes)
+        if vote_counts:
+            max_votes = max(vote_counts.values())
+            answers_with_max_votes = [int(answer_id) for answer_id, count in vote_counts.items() if count == max_votes]
+            winning_answer_id = random.choice(answers_with_max_votes)  # Random if tie
+        else:
+            winning_answer_id = None
+            
+        # Check if team got it right
+        was_correct = winning_answer_id == correct_answer.id
+        points_earned = 100 if was_correct else 0
+        
+        # Update score
+        game_state.total_score += points_earned
+        game_state.status = "question_ended"
+        db.commit()
+        
+        return {
+            "flashcard_id": flashcard.id,
+            "correct_answer_id": correct_answer.id,
+            "was_correct": was_correct,
+            "points_earned": points_earned,
+            "total_score": game_state.total_score,
+            "winning_answer_id": winning_answer_id,
+            "vote_counts": vote_counts
+        }
+    finally:
+        db.close()
+
+
+def next_question(session_id: str) -> dict:
+    """Move to next question or end game"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        
+        # Get all flashcards
+        flashcards = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).all()
+        total_questions = len(flashcards)
+        
+        # Check if game should end
+        next_index = game_state.current_question_index + 1
+        
+        # Simple logic: Only end when all questions are answered
+        
+        if next_index >= total_questions:
+            # All questions answered
+            percentage = (game_state.total_score / game_state.max_possible_score) * 100
+            status = "won" if percentage >= 90 else "lost"
+            game_state.status = "game_finished"
+            game_state.ended_at = datetime.utcnow()
+            db.commit()
+            
+            return {
+                "game_finished": True,
+                "result": {
+                    "session_id": session_id,
+                    "total_score": game_state.total_score,
+                    "max_possible_score": game_state.max_possible_score,
+                    "percentage": percentage,
+                    "status": status,
+                    "questions_answered": total_questions,
+                    "total_questions": total_questions
+                }
+            }
+        else:
+            # Continue to next question
+            next_flashcard = flashcards[next_index]
+            game_state.current_question_index = next_index
+            game_state.current_flashcard_id = next_flashcard.id
+            game_state.question_started_at = datetime.utcnow()
+            game_state.status = "question_active"
+            db.commit()
+            
+            return {
+                "game_finished": False,
+                "question": prepare_question_data(next_flashcard, next_index, total_questions)
+            }
+    finally:
+        db.close()
+
+
+def get_game_state(session_id: str) -> dict:
+    """Get current game state with current question"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            return None
+            
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
+        
+        result = {
+            "session_id": game_state.session_id,
+            "current_question_index": game_state.current_question_index,
+            "current_flashcard_id": game_state.current_flashcard_id,
+            "total_score": game_state.total_score,
+            "max_possible_score": game_state.max_possible_score,
+            "status": game_state.status,
+            "question_started_at": game_state.question_started_at.isoformat() if game_state.question_started_at else None,
+            "flashcard_count": flashcard_count
+        }
+        
+        # If there's a current flashcard, include the question and answers
+        if game_state.current_flashcard_id:
+            flashcard = db.query(Flashcard).filter(Flashcard.id == game_state.current_flashcard_id).first()
+            if flashcard:
+                answers = db.query(Answer).filter(Answer.flashcard_id == flashcard.id).all()
+                result["current_question"] = {
+                    "flashcard_id": flashcard.id,
+                    "question": flashcard.question,
+                    "question_index": game_state.current_question_index,
+                    "total_questions": flashcard_count,
+                    "answers": [
+                        {
+                            "id": answer.id,
+                            "text": answer.antwort
+                            # Don't reveal correct answer unless question is ended
+                        }
+                        for answer in answers
+                    ]
+                }
+                
+                # If question is ended, include the result
+                if game_state.status == 'question_ended':
+                    # Get question result
+                    correct_answers = [a for a in answers if a.is_correct]
+                    votes = db.query(Vote).filter(
+                        Vote.session_id == session_id,
+                        Vote.flashcard_id == game_state.current_flashcard_id
+                    ).all()
+                    
+                    correct_votes = 0
+                    for vote in votes:
+                        if any(a.id == vote.answer_id for a in correct_answers):
+                            correct_votes += 1
+                    
+                    result["question_result"] = {
+                        "flashcard_id": game_state.current_flashcard_id,
+                        "correct_answer_ids": [a.id for a in correct_answers],
+                        "correct_votes": correct_votes,
+                        "total_votes": len(votes),
+                        "total_score": game_state.total_score
+                    }
+                    result["show_result"] = True
+                else:
+                    result["show_result"] = False
+        
+        return result
+    finally:
+        db.close()
+
+
+def add_chat_message(session_id: str, user_id: int, message: str) -> ChatMessage:
+    """Add chat message to session"""
+    db = SessionLocal()
+    try:
+        chat_message = ChatMessage(
+            session_id=session_id,
+            user_id=user_id,
+            message=message
+        )
+        db.add(chat_message)
+        db.commit()
+        db.refresh(chat_message)
+        return chat_message
+    finally:
+        db.close()
+
+
+def get_chat_messages(session_id: str, limit: int = 50) -> list:
+    """Get recent chat messages for session"""
+    db = SessionLocal()
+    try:
+        messages = db.query(ChatMessage).filter(
+            ChatMessage.session_id == session_id
+        ).order_by(ChatMessage.sent_at.desc()).limit(limit).all()
+        
+        result = []
+        for msg in reversed(messages):  # Reverse to get chronological order
+            user = db.query(User).filter(User.id == msg.user_id).first()
+            result.append({
+                "id": msg.id,
+                "user_id": msg.user_id,
+                "username": user.username if user else "Unknown",
+                "message": msg.message,
+                "sent_at": msg.sent_at
+            })
+        
+        return result
+    finally:
+        db.close()
+
+
+##### GAME STATE OPERATIONS #####
+def calculate_target_score(session_id: str):
+    """Calculate 90% target score for a session"""
+    db = SessionLocal()
+    try:
+        # Get session and subject
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        if not session:
+            return 0
+        
+        # Count flashcards in the subject
+        flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
+        
+        # Each correct answer = 100 points, target = 90%
+        max_possible_score = flashcard_count * 100
+        target_score = int(max_possible_score * 0.9)
+        
+        return {
+            "target_score": target_score,
+            "max_possible_score": max_possible_score,
+            "total_questions": flashcard_count
+        }
+    finally:
+        db.close()
+
+
+def update_game_score(session_id: str, is_correct: bool):
+    """Update game score based on answer correctness"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            return False
+        
+        # Add 100 points if correct
+        if is_correct:
+            game_state.current_score += 100
+        
+        # Increment questions answered
+        game_state.questions_answered += 1
+        
+        db.commit()
+        db.refresh(game_state)
+        return True
+    finally:
+        db.close()
+
+
+def check_early_loss(session_id: str):
+    """Check if 90% target is still achievable"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            return False
+        
+        current_score = game_state.current_score
+        questions_answered = game_state.questions_answered
+        total_questions = game_state.total_questions
+        
+        # Calculate remaining questions and max possible score
+        remaining_questions = total_questions - questions_answered
+        max_additional_score = remaining_questions * 100
+        max_achievable_score = current_score + max_additional_score
+        
+        # Calculate target (90% of total possible)
+        target_score = int(total_questions * 100 * 0.9)
+        
+        # Return True if loss is inevitable
+        return max_achievable_score < target_score
+    finally:
+        db.close()
+
+
+def calculate_final_result(session_id: str):
+    """Calculate final game result"""
+    db = SessionLocal()
+    try:
+        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
+        if not game_state:
+            return None
+        
+        # Use correct field names
+        final_score = game_state.total_score  # was game_state.current_score
+        questions_correct = final_score // 100  # 100 points per correct
+        
+        # Get total questions from max_possible_score (already calculated correctly)
+        max_possible_score = game_state.max_possible_score  # was total_questions * 100
+        total_questions = max_possible_score // 100  # Calculate from max_possible_score
+        target_score = int(max_possible_score * 0.9)
+        
+        # Victory if reached 90% target
+        victory = final_score >= target_score
+        
+        return {
+            "final_score": final_score,
+            "questions_correct": questions_correct,
+            "questions_total": total_questions,
+            "max_possible_score": max_possible_score,
+            "target_score": target_score,
+            "victory": victory,
+            "percentage": (final_score / max_possible_score) * 100 if max_possible_score > 0 else 0
+        }
     finally:
         db.close()
 

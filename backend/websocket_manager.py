@@ -81,21 +81,46 @@ class ConnectionManager:
 
     async def broadcast_to_group(self, group_name: str, message: dict):
         """Send message to all users in a group"""
+        print(f"🔥 WEBSOCKET DEBUG: Broadcasting to group {group_name}")
+        print(f"🔥 WEBSOCKET DEBUG: Message: {message}")
+        print(f"🔥 WEBSOCKET DEBUG: Group users: {self.group_users.get(group_name, 'NOT_FOUND')}")
+        print(f"🔥 WEBSOCKET DEBUG: Active connections: {list(self.active_connections.keys())}")
+        
         if group_name not in self.group_users:
+            print(f"🔥 WEBSOCKET DEBUG: Group {group_name} not found!")
             return
             
         disconnected_users = []
-        for user_id in self.group_users[group_name]:
+        for user_id in list(self.group_users[group_name]):  # Create copy to avoid modification during iteration
+            print(f"🔥 WEBSOCKET DEBUG: Sending to user {user_id}")
             if user_id in self.active_connections:
                 try:
                     await self.active_connections[user_id].send_text(json.dumps(message))
+                    print(f"🔥 WEBSOCKET DEBUG: Successfully sent to user {user_id}")
                 except Exception as e:
+                    print(f"🔥 WEBSOCKET DEBUG: Error sending message to user {user_id}: {e}")
                     logger.error(f"Error sending message to user {user_id}: {e}")
                     disconnected_users.append(user_id)
+            else:
+                print(f"🔥 WEBSOCKET DEBUG: User {user_id} not in active connections (might be temporarily disconnected)")
         
-        # Clean up disconnected users
+        # Only remove disconnected users who have no active connection at all
         for user_id in disconnected_users:
-            await self.disconnect(user_id)
+            if user_id not in self.active_connections:
+                print(f"🔥 WEBSOCKET DEBUG: Removing fully disconnected user {user_id} from group {group_name}")
+                if group_name in self.group_users and user_id in self.group_users[group_name]:
+                    self.group_users[group_name].remove(user_id)
+                    if not self.group_users[group_name]:  # If group is empty
+                        del self.group_users[group_name]
+                        print(f"🔥 WEBSOCKET DEBUG: Deleted empty group {group_name}")
+            
+            # Only fully disconnect if user has no active connection at all
+            if user_id not in self.active_connections:
+                if user_id in self.user_names:
+                    del self.user_names[user_id]
+                    print(f"🔥 WEBSOCKET DEBUG: Fully disconnected user {user_id}")
+        
+        print(f"🔥 WEBSOCKET DEBUG: After broadcast - Group {group_name} users: {self.group_users.get(group_name, 'NOT_FOUND')}")
 
     async def send_personal_message(self, message: str, user_id: int):
         """Send message to a specific user"""
@@ -119,6 +144,26 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"Error sending invitation notification to user {user_id}: {e}")
                 await self.disconnect(user_id)
+
+    async def broadcast_game_event(self, session_id: str, event_type: str, data: dict):
+        """Broadcast game-specific events to all session participants"""
+        message = {
+            "type": event_type,
+            **data
+        }
+        await self.broadcast_to_group(f"lobby_{session_id}", message)
+        logger.info(f"Broadcasted {event_type} to session {session_id}")
+
+    async def join_game_room(self, user_id: int, session_id: str):
+        """Join user to game-specific room (alias for lobby room)"""
+        self.join_group(user_id, f"lobby_{session_id}")
+        logger.info(f"User {self.user_names.get(user_id)} joined game room for session {session_id}")
+
+    async def leave_game_room(self, user_id: int, session_id: str):
+        """Remove user from game-specific room"""
+        self.leave_group(user_id, f"lobby_{session_id}")
+        await self._broadcast_online_users_update(f"lobby_{session_id}")
+        logger.info(f"User {self.user_names.get(user_id)} left game room for session {session_id}")
 
     async def _broadcast_online_users_update(self, group_name: str):
         """Broadcast updated online users list to all users in a group"""
