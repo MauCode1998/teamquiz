@@ -1,7 +1,6 @@
 import subprocess
 import threading
 
-
 bashscript = """
 cd frontend
 pwd
@@ -41,8 +40,6 @@ for script in scripts:
 uvicorn_thread.start()
 
 process = subprocess.run([bashscript_3],capture_output=True,shell=True)
-
-
 
 uvicorn_thread.join()
 

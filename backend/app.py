@@ -86,8 +86,42 @@ app.include_router(lobby_router)
 # Start background cleanup task
 @app.on_event("startup")
 async def startup_event():
+    # Clean up old sessions on server start
+    cleanup_old_sessions()
+    
+    # Start background cleanup task
     start_cleanup_task()
     print("🧹 Background cleanup task started")
+
+def cleanup_old_sessions():
+    """Clean up all existing sessions on server startup"""
+    from database import SessionLocal
+    from models import QuizSession, SessionParticipant, GameState, Vote, ChatMessage
+    
+    db = SessionLocal()
+    try:
+        # Delete all related data first (foreign key constraints)
+        deleted_votes = db.query(Vote).delete()
+        deleted_chat = db.query(ChatMessage).delete()
+        deleted_game_states = db.query(GameState).delete()
+        deleted_participants = db.query(SessionParticipant).delete()
+        deleted_sessions = db.query(QuizSession).delete()
+        
+        db.commit()
+        
+        print(f"\n🗑️  STARTUP CLEANUP:")
+        print(f"   - Deleted {deleted_sessions} sessions")
+        print(f"   - Deleted {deleted_participants} participants")
+        print(f"   - Deleted {deleted_game_states} game states")
+        print(f"   - Deleted {deleted_votes} votes")
+        print(f"   - Deleted {deleted_chat} chat messages")
+        print(f"   ✅ All old sessions cleaned up!\n")
+        
+    except Exception as e:
+        print(f"❌ Error during session cleanup: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 @app.exception_handler(RequestValidationError)

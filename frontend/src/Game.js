@@ -59,8 +59,24 @@ const Game = () => {
       const gameStateResponse = await axios.get(`/api/game/state/${sessionId}`);
       const gameData = gameStateResponse.data;
       
-      // Update game state
-      setGameState(gameData);
+      // Update game state while preserving scores (WebSocket is authoritative)
+      setGameState(prev => {
+        if (!prev) {
+          return gameData;
+        }
+        
+        // CRITICAL: Never overwrite scores from WebSocket!
+        return {
+          ...prev,
+          // Update from API but preserve WebSocket scores
+          current_question_index: gameData.current_question_index,
+          current_flashcard_id: gameData.current_flashcard_id,
+          status: gameData.status,
+          // NEVER update these from API:
+          // total_score: KEEP from WebSocket
+          // max_possible_score: KEEP original
+        };
+      });
       
       // Set current question if available
       if (gameData.current_question) {
@@ -134,18 +150,24 @@ const Game = () => {
         const gameStateResponse = await axios.get(`/api/game/state/${sessionId}`);
         const gameData = gameStateResponse.data;
         
-        // Only update gameState if we don't have one, or if the API has a higher score
+        // Only update gameState if we don't have one, otherwise preserve WebSocket scores
         setGameState(prev => {
           if (!prev) {
             return gameData;
           }
           
-          // Preserve higher score (WebSocket updates are more current)
-          if ((gameData.total_score || 0) > (prev.total_score || 0)) {
-            return { ...prev, ...gameData };
-          } else {
-            return { ...prev, ...gameData, total_score: prev.total_score };
-          }
+          // CRITICAL: Never overwrite score from WebSocket updates!
+          // Only update non-score related fields from API
+          return { 
+            ...prev,
+            // Update from API but preserve WebSocket scores
+            current_question_index: gameData.current_question_index,
+            current_flashcard_id: gameData.current_flashcard_id,
+            status: gameData.status,
+            // NEVER update these from API:
+            // total_score: KEEP from WebSocket
+            // max_possible_score: KEEP original
+          };
         });
         
         // Set current question if available
@@ -241,22 +263,28 @@ const Game = () => {
         setQuestionResult(message.result);
         setShowResult(true);
         
-        if (gameState) {
-          setGameState(prev => ({
+        // CENTRAL SCORE UPDATE: Only from WebSocket question_ended
+        setGameState(prev => {
+          if (!prev) {
+            // Initial game state from first question result
+            const questionsCompleted = Math.floor(message.result.total_score / 100);
+            return {
+              total_score: message.result.total_score,
+              max_possible_score: message.result.max_possible_score,
+              status: 'playing',
+              current_question_index: questionsCompleted,
+              flashcard_count: (message.result.max_possible_score || 200) / 100,
+              current_flashcard_id: message.result.flashcard_id
+            };
+          }
+          
+          // Update existing game state - ONLY score changes
+          return {
             ...prev,
-            total_score: message.result.total_score
-          }));
-        } else {
-          const questionsCompleted = Math.floor(message.result.total_score / 100);
-          setGameState({
             total_score: message.result.total_score,
-            max_possible_score: message.result.max_possible_score || 200,
-            status: 'playing',
-            current_question_index: questionsCompleted,
-            flashcard_count: (message.result.max_possible_score || 200) / 100,
-            current_flashcard_id: message.result.flashcard_id
-          });
-        }
+            // Keep everything else unchanged!
+          };
+        });
         break;
         
       case 'game_finished':
@@ -369,7 +397,8 @@ const Game = () => {
 
   const calculateProgress = () => {
     if (!gameState || !currentQuestion) return 0;
-    return ((currentQuestion.question_index + 1) / currentQuestion.total_questions) * 100;
+    // Start at 0 for first question, then progress
+    return (currentQuestion.question_index / currentQuestion.total_questions) * 100;
   };
 
   const calculateScorePercentage = () => {
@@ -640,7 +669,7 @@ const Game = () => {
             <Typography level="h4" mb={2}>Host-Steuerung</Typography>
             <Stack direction="row" spacing={2}>
               {/* Always show all buttons */}
-              <Button onClick={endQuestion} color="primary" size="lg">
+              <Button onClick={endQuestion} color="primary" size="lg" disabled={showResult}>
                 Voting beenden
               </Button>
               
