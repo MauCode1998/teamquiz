@@ -68,8 +68,12 @@ class KarteiKarteRequest(BaseModel):
 
 # Token storage is now handled by JWT and database
 
-# Serve React static files
-app.mount("/static", StaticFiles(directory="../frontend/build/static"), name="static")
+# Serve React static files (only if build directory exists)
+import os
+if os.path.exists("../frontend/build/static"):
+    app.mount("/static", StaticFiles(directory="../frontend/build/static"), name="static")
+elif os.path.exists("frontend/build/static"):
+    app.mount("/static", StaticFiles(directory="frontend/build/static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -1830,6 +1834,8 @@ async def serve_react_app(full_path: str):
     index_file = "../frontend/build/index.html"
     if os.path.exists(index_file):
         return FileResponse(index_file)
+    elif os.path.exists("frontend/build/index.html"):
+        return FileResponse("frontend/build/index.html")
     else:
         raise HTTPException(status_code=404, detail="Frontend build not found. Run 'npm run build' in frontend directory.")
 
