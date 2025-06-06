@@ -10,7 +10,7 @@ import { useState,useEffect } from 'react';
 import AccordionDetails from '@mui/joy/AccordionDetails';
 import AccordionSummary from '@mui/joy/AccordionSummary';
 import Accordion from '@mui/joy/Accordion';
-import Logo from './logo.jpeg';
+import Logo from './logo.png';
 import AccordionGroup from '@mui/joy/AccordionGroup';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
