@@ -6,6 +6,7 @@ import ListItem from '@mui/joy/ListItem';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
+import Box from '@mui/joy/Box';
 import Divider from '@mui/joy/Divider';
 import CardCover from '@mui/joy/CardCover'
 import Input from '@mui/joy/Input';
@@ -323,8 +324,6 @@ function Fach() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <Button 
                                 size="sm" 
-                                variant="soft" 
-                                color="primary"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedCard(karteikarte);
@@ -338,21 +337,37 @@ function Fach() {
                                     setEditError("");
                                     setShowEditDialog(true);
                                 }}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    borderRadius: '8px',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100%)'
+                                    }
+                                }}
                             >
-                                Bearbeiten
+                                ✏️ Bearbeiten
                             </Button>
                             <Button 
                                 size="sm" 
-                                variant="soft" 
-                                color="danger"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedCard(karteikarte);
                                     setDeleteCardError("");
                                     setShowDeleteCardDialog(true);
                                 }}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    borderRadius: '8px',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100())'
+                                    }
+                                }}
                             >
-                                Löschen
+                                🗑️ Löschen
                             </Button>
                         </div>
                     </div>
@@ -378,12 +393,47 @@ function Fach() {
         <div className='mittelPage'>
             
             {/* Subject Title */}
-            <Card sx={{ mb: 2 }}>
-                <h1 className='mainPageUeberschrift'>Fach: {fachname}</h1>
-                <Typography level="body-sm">Gruppe: {gruppenname}</Typography>
+            <Card sx={{ 
+                mb: 2,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                color: '#FFF',
+                textAlign: 'center'
+            }}>
+                <h1 className='mainPageUeberschrift' style={{
+                    fontSize: '2.5rem',
+                    fontWeight: 'bold',
+                    textShadow: '0 3px 6px rgba(0,0,0,0.3)',
+                    margin: '1rem 0'
+                }}>📖 Fach: {fachname}</h1>
+                <Typography level="h4" sx={{
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    background: 'rgba(255,255,255,0.15)',
+                    borderRadius: '12px',
+                    p: 1,
+                    display: 'inline-block'
+                }}>🏆 Gruppe: {gruppenname}</Typography>
             </Card>
             
-            <Card sx={{ display:"flex", cursor:"pointer",alignItems:"center",justifyContent:"center"}}>
+            <Card sx={{ 
+                display:"flex", 
+                cursor:"pointer",
+                alignItems:"center",
+                justifyContent:"center",
+                background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(78, 205, 196, 0.4)',
+                minHeight: '200px',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 20px 40px rgba(78, 205, 196, 0.6)'
+                }
+            }}>
             <CardCover sx={{overflow:"hidden"}}>
                 <Button
                     onClick={startLobby}
@@ -395,42 +445,104 @@ function Fach() {
                         border: 'none',
                         borderRadius: 0,
                         background: 'transparent',
-                        '&:hover': { background: 'rgba(0,0,0,0.1)' }
+                        '&:hover': { background: 'rgba(78, 205, 196, 0.3)' },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                     }}
                 >
-                    <img
-                        src={Bild}
-                        loading="lazy"
-                        alt="Lobby starten"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                    {creatingLobby && (
-                        <Typography 
-                            sx={{ 
-                                position: 'absolute', 
-                                color: 'white', 
-                                backgroundColor: 'rgba(0,0,0,0.7)', 
-                                padding: '8px 16px', 
-                                borderRadius: '4px' 
-                            }}
-                        >
-                            Lobby wird erstellt...
+                    <Box sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(135deg, rgba(78, 205, 196, 0.8) 0%, rgba(68, 160, 141, 0.8) 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#FFF'
+                    }}>
+                        <Typography level="h1" sx={{
+                            fontSize: '4rem',
+                            fontWeight: 'bold',
+                            textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                            mb: 2
+                        }}>🚀</Typography>
+                        
+                        <Typography level="h2" sx={{
+                            fontWeight: 'bold',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                            textAlign: 'center'
+                        }}>
+                            {creatingLobby ? 'Lobby wird erstellt...' : 'Quiz-Lobby starten'}
                         </Typography>
-                    )}
+                        
+                        <Typography level="body1" sx={{
+                            mt: 1,
+                            textAlign: 'center',
+                            opacity: 0.9
+                        }}>
+                            Klicken Sie hier, um eine neue Spielrunde zu beginnen!
+                        </Typography>
+                    </Box>
                 </Button>
             </CardCover>
             </Card>
 
             <OnlineUsers groupName={gruppenname} showInviteButtons={false} />
            
-            <Card>
-            <h2 className = 'mainPageUeberschrift'>Alle Fragen ({gesamtAnzahlFragen})</h2>
+            <Card sx={{
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(240, 147, 251, 0.4)',
+                color: '#FFF'
+            }}>
+            <h2 className = 'mainPageUeberschrift' style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                fontSize: '2rem',
+                margin: '1rem 0'
+            }}>📝 Alle Fragen ({gesamtAnzahlFragen})</h2>
                         
-                <List>
-                    {kartenHTML}
-                    <Accordion variant="plain">
-                        <AccordionSummary variant="plain" sx={{"&:hover":{backgroundColor:"transparent !important"},marginBottom:"1rem",border:"dotted 2px #004"}}>Frage hinzufügen</AccordionSummary>
-                        <AccordionDetails>
+                <List sx={{
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '15px',
+                    p: 1,
+                    backdropFilter: 'blur(10px)'
+                }}>
+                    {alleKarteikarten.length === 0 ? (
+                        <ListItem sx={{
+                            textAlign: 'center',
+                            fontStyle: 'italic',
+                            color: 'rgba(255,255,255,0.8)',
+                            py: 3
+                        }}>
+                            Noch keine Fragen vorhanden 🤔
+                        </ListItem>
+                    ) : kartenHTML}
+                    <Accordion sx={{
+                        background: 'rgba(255,255,255,0.15)',
+                        borderRadius: '15px',
+                        border: 'none',
+                        backdropFilter: 'blur(10px)',
+                        mt: 2
+                    }}>
+                        <AccordionSummary sx={{
+                            color: '#FFF',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            '&:hover': {
+                                background: 'rgba(255,255,255,0.1)'
+                            }
+                        }}>➕ Frage hinzufügen</AccordionSummary>
+                        <AccordionDetails sx={{
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: '0 0 15px 15px'
+                        }}>
                             <FormControl sx={{mb: 2}}>
                                 <FormLabel>Frage</FormLabel>
                                 <Input 
@@ -502,10 +614,20 @@ function Fach() {
                             
                             <Button 
                                 onClick={karteikarteErstellen} 
-                                sx={{mt: 2}}
                                 fullWidth
+                                sx={{
+                                    mt: 2,
+                                    background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    fontSize: '1.1rem',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #229954 0%, #27AE60 100%)'
+                                    }
+                                }}
                             >
-                                Karteikarte speichern
+                                💾 Karteikarte speichern
                             </Button>
                         </AccordionDetails>
                         
@@ -514,18 +636,48 @@ function Fach() {
                 
             </Card>
 
-            <Card>
-            <h3>Sonstiges</h3>
-                <Divider></Divider>
-                <Button variant="soft" color="primary" onClick={() => {
-                    setNewSubjectName(fachname);
-                    setRenameError("");
-                    setShowRenameDialog(true);
-                }}>Fach umbenennen</Button>
-                <Button variant="soft" color="warning" onClick={() => {
-                    setDeleteError("");
-                    setShowDeleteDialog(true);
-                }}>Fach löschen</Button>
+            <Card sx={{
+                background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(44, 62, 80, 0.4)',
+                color: '#FFF'
+            }}>
+            <h3 style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                fontSize: '1.5rem',
+                margin: '1rem 0'
+            }}>⚙️ Fach-Verwaltung</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '1rem' }}>
+                    <Button onClick={() => {
+                        setNewSubjectName(fachname);
+                        setRenameError("");
+                        setShowRenameDialog(true);
+                    }} sx={{
+                        background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+                        color: '#FFF',
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #E67E22 0%, #D68910 100%)'
+                        }
+                    }}>✏️ Fach umbenennen</Button>
+                    
+                    <Button onClick={() => {
+                        setDeleteError("");
+                        setShowDeleteDialog(true);
+                    }} sx={{
+                        background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                        color: '#FFF',
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100())'
+                        }
+                    }}>🗑️ Fach löschen</Button>
+                </div>
             </Card>
         </div>
 

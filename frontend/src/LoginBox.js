@@ -33,50 +33,126 @@ function LoginBox() {
     
     return(
         <div className = 'loginPage'>
-            <Card sx = {{width:"20rem"}}>
-            <h2 className='loginBoxTitle'>Login</h2>
+            <Card sx={{
+                width: "24rem",
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '30px',
+                boxShadow: '0 20px 60px rgba(102, 126, 234, 0.4)',
+                color: '#FFF',
+                border: 'none'
+            }}>
+            <h2 className='loginBoxTitle' style={{
+                textAlign: 'center',
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                textShadow: '0 3px 6px rgba(0,0,0,0.3)',
+                margin: '1rem 0 2rem 0'
+            }}>🔐 Login</h2>
             
             {error && (
-                <Alert color="danger" sx={{ mb: 2 }}>
+                <Alert sx={{
+                    mb: 2,
+                    background: 'rgba(255,255,255,0.95)',
+                    color: '#C0392B',
+                    borderRadius: '12px',
+                    border: 'none'
+                }}>
                     {error}
                 </Alert>
             )}
             
-            <label>Benutzername</label>
-            <Input 
-                placeholder='Benutzername'
-                value={benutzername}
-                onChange = {(e)=> setBenutzername(e.target.value)}
-                disabled={loading}
-            />
-            
-            <label>Passwort</label>
-            <Input 
-                placeholder='Passwort'
-                value={passwort}
-                type = "password"
-                onChange = {(e)=> setPasswort(e.target.value)}
-                disabled={loading}
-                onKeyPress={(e) => e.key === 'Enter' && validateLogin()}
-            />
+            <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '20px',
+                padding: '2rem',
+                backdropFilter: 'blur(10px)'
+            }}>
+                <label style={{
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    display: 'block',
+                    marginBottom: '8px'
+                }}>👤 Benutzername</label>
+                <Input 
+                    placeholder='Benutzername eingeben...'
+                    value={benutzername}
+                    onChange = {(e)=> setBenutzername(e.target.value)}
+                    disabled={loading}
+                    sx={{
+                        background: 'rgba(255,255,255,0.95)',
+                        borderRadius: '12px',
+                        border: 'none',
+                        mb: 2,
+                        fontSize: '1rem'
+                    }}
+                />
+                
+                <label style={{
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    display: 'block',
+                    marginBottom: '8px'
+                }}>🔒 Passwort</label>
+                <Input 
+                    placeholder='Passwort eingeben...'
+                    value={passwort}
+                    type = "password"
+                    onChange = {(e)=> setPasswort(e.target.value)}
+                    disabled={loading}
+                    onKeyPress={(e) => e.key === 'Enter' && validateLogin()}
+                    sx={{
+                        background: 'rgba(255,255,255,0.95)',
+                        borderRadius: '12px',
+                        border: 'none',
+                        mb: 3,
+                        fontSize: '1rem'
+                    }}
+                />
 
-            <Button 
-              variant="solid" 
-              color="primary"
-              sx = {{marginTop: "0.5rem"}} 
-              onClick = {() => validateLogin()}
-              loading={loading}
-              disabled={loading}
-            >
-              Anmelden
-            </Button>
-            
-            <Typography level="body-sm" sx={{ mt: 2, textAlign: 'center' }}>
-                Noch kein Konto?{' '}
-                <Link to="/register" style={{ textDecoration: 'none' }}>
-                    Jetzt registrieren
-                </Link>
-            </Typography>
+                <Button 
+                  onClick = {() => validateLogin()}
+                  loading={loading}
+                  disabled={loading}
+                  fullWidth
+                  sx={{
+                    background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    borderRadius: '15px',
+                    fontSize: '1.2rem',
+                    padding: '12px',
+                    boxShadow: '0 6px 20px rgba(78, 205, 196, 0.4)',
+                    '&:hover': {
+                        background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 25px rgba(78, 205, 196, 0.6)'
+                    }
+                  }}
+                >
+                  🚀 Anmelden
+                </Button>
+                
+                <Typography level="h4" sx={{ 
+                    mt: 3, 
+                    textAlign: 'center',
+                    color: '#FFF',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                    Noch kein Konto?{' '}
+                    <Link to="/register" style={{ 
+                        color: '#4ECDC4',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }}>
+                        Jetzt registrieren 📝
+                    </Link>
+                </Typography>
+            </div>
             </Card>
         </div>
     );

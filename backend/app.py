@@ -748,7 +748,7 @@ async def create_session(
     return SessionResponse(
         session_id=session.id,
         join_code=join_code,
-        websocket_url=f"ws://localhost:8000/ws/{{token}}"
+        websocket_url=f"/ws/{{token}}"
     )
 
 
@@ -1837,4 +1837,4 @@ async def serve_react_app(full_path: str):
 Base.metadata.create_all(bind=engine)
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

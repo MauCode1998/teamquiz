@@ -199,14 +199,25 @@ const Game = () => {
     const token = getToken();
     if (!token) return;
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/${token}`);
+    // Use the same host and port as the current page
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.host; // includes hostname:port
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/${token}`;
+    
+    console.log('Attempting WebSocket connection to:', wsUrl);
+    const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
-      console.log('Game WebSocket connected');
+      console.log('Game WebSocket connected successfully!');
       ws.send(JSON.stringify({
         type: 'join_game',
         session_id: sessionId
       }));
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      console.error('WebSocket URL was:', wsUrl);
     };
 
     ws.onmessage = (event) => {
@@ -471,41 +482,151 @@ const Game = () => {
 
   // Game finished - but only show if we've already shown the last question result
   if (gameResult && showFinalResult) {
+    const isWon = gameResult.status === 'won';
     return (
       <Box sx={{ p: 4, maxWidth: 800, margin: '0 auto' }}>
-        <Card>
-          <CardContent textAlign="center">
-            <Typography level="h2" mb={2}>
-              {gameResult.status === 'won' ? '🎉 Gewonnen!' : '😔 Verloren'}
+        <Card sx={{
+          background: isWon 
+            ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6347 100%)'
+            : 'linear-gradient(135deg, #FF7F7F 0%, #FF6B6B 50%, #FF5252 100%)',
+          borderRadius: '30px',
+          boxShadow: isWon 
+            ? '0 15px 50px rgba(255, 215, 0, 0.5)'
+            : '0 15px 50px rgba(255, 107, 107, 0.5)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Celebration Confetti Effect */}
+          {isWon && (
+            <Box sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'radial-gradient(circle at 20% 80%, #FFD700 0%, transparent 50%), radial-gradient(circle at 80% 20%, #FF6347 0%, transparent 50%), radial-gradient(circle at 40% 40%, #FFA500 0%, transparent 50%)',
+              opacity: 0.3,
+              zIndex: 0
+            }} />
+          )}
+          
+          <CardContent textAlign="center" sx={{ position: 'relative', zIndex: 1 }}>
+            <Typography 
+              level="h1" 
+              mb={3}
+              sx={{
+                fontSize: '3.5rem',
+                fontWeight: 'bold',
+                color: '#FFF',
+                textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                animation: isWon ? 'bounce 2s infinite' : 'none'
+              }}
+            >
+              {isWon ? '🎆🎉 GEWONNEN! 🎉🎆' : '😔📚 VERLOREN 📚😔'}
             </Typography>
             
-            <Typography level="h4" mb={2}>
-              {gameResult.total_score} / {gameResult.max_possible_score} Punkte
-            </Typography>
-            
-            <Typography level="body1" mb={2}>
-              {gameResult.percentage?.toFixed(1)}% richtig
-            </Typography>
-            
-            {gameResult.status === 'won' ? (
-              <Typography level="body1" color="success">
-                Hervorragend! Ihr habt das Ziel von 90% erreicht! 🎊
+            <Box sx={{
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: '20px',
+              p: 3,
+              mb: 3,
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Typography 
+                level="h2" 
+                mb={2}
+                sx={{
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}
+              >
+                🏆 {gameResult.total_score} / {gameResult.max_possible_score} Punkte
               </Typography>
-            ) : (
-              <Typography level="body1" color="warning">
-                Ihr habt verloren, da müsst ihr wohl noch was üben 📚
+              
+              <Typography 
+                level="h3" 
+                mb={2}
+                sx={{
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}
+              >
+                🎯 {gameResult.percentage?.toFixed(1)}% richtig
               </Typography>
-            )}
+            </Box>
+            
+            <Box sx={{
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '16px',
+              p: 2,
+              mb: 4
+            }}>
+              {isWon ? (
+                <Typography 
+                  level="h4" 
+                  sx={{
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  ✨ Hervorragend! Ihr habt das Ziel von 90% erreicht! ✨
+                </Typography>
+              ) : (
+                <Typography 
+                  level="h4"
+                  sx={{
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  💪 Ihr habt verloren, da müsst ihr wohl noch was üben! 💪
+                </Typography>
+              )}
+            </Box>
             
             <Button 
               onClick={() => navigate('/groups')} 
-              sx={{ mt: 4 }}
               size="lg"
+              sx={{
+                background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
+                color: '#FFF',
+                fontWeight: 'bold',
+                borderRadius: '15px',
+                padding: '12px 30px',
+                fontSize: '18px',
+                boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #34495E 0%, #2C3E50 100%)',
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(44, 62, 80, 0.6)'
+                }
+              }}
             >
-              Zurück zu Gruppen
+              🏠 Zurück zu Gruppen
             </Button>
           </CardContent>
         </Card>
+        
+        {/* Add bounce animation for winner */}
+        <style>
+          {`
+            @keyframes bounce {
+              0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+              }
+              40% {
+                transform: translateY(-10px);
+              }
+              60% {
+                transform: translateY(-5px);
+              }
+            }
+          `}
+        </style>
       </Box>
     );
   }
@@ -514,75 +635,239 @@ const Game = () => {
   return (
     <Box sx={{ p: 4, maxWidth: 1000, margin: '0 auto' }}>
       {/* Game Header */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography level="h3">{sessionData?.subject?.name} Quiz</Typography>
-          <Typography level="body2">
-            Frage {currentQuestion?.question_index + 1} von {currentQuestion?.total_questions}
+      <Card sx={{ 
+        mb: 3, 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '20px',
+        boxShadow: '0 8px 32px rgba(102, 126, 234, 0.4)'
+      }}>
+        <CardContent sx={{ color: '#FFF', textAlign: 'center' }}>
+          <Typography 
+            level="h3" 
+            sx={{ 
+              fontWeight: 'bold',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              mb: 1
+            }}
+          >
+            🎯 {sessionData?.subject?.name} Quiz
           </Typography>
-          <LinearProgress 
-            determinate 
-            value={calculateProgress()} 
-            sx={{ mt: 1 }}
-          />
-          <Typography level="h4" sx={{ mt: 2 }}>
-            {gameState?.total_score} / {gameState?.max_possible_score} Punkte ({calculateScorePercentage().toFixed(1)}%)
+          
+          <Typography 
+            level="body1" 
+            sx={{ 
+              mb: 2,
+              opacity: 0.9,
+              fontSize: '16px'
+            }}
+          >
+            📝 Frage {currentQuestion?.question_index + 1} von {currentQuestion?.total_questions}
+          </Typography>
+          
+          {/* Progress Bar with Glow */}
+          <Box sx={{ mb: 2, position: 'relative' }}>
+            <LinearProgress 
+              determinate 
+              value={calculateProgress()} 
+              sx={{ 
+                height: 12,
+                borderRadius: '6px',
+                background: 'rgba(255,255,255,0.2)',
+                '& .MuiLinearProgress-bar': {
+                  background: 'linear-gradient(90deg, #FFD700, #FFA500)',
+                  borderRadius: '6px',
+                  boxShadow: '0 0 10px rgba(255, 215, 0, 0.6)'
+                }
+              }}
+            />
+          </Box>
+          
+          <Typography 
+            level="h4" 
+            sx={{ 
+              fontWeight: 'bold',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '12px',
+              p: 2,
+              backdropFilter: 'blur(10px)'
+            }}
+          >
+            🏆 {gameState?.total_score} / {gameState?.max_possible_score} Punkte ({calculateScorePercentage().toFixed(1)}%)
           </Typography>
         </CardContent>
       </Card>
 
       {/* Current Question */}
       {currentQuestion && !showResult && (
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ 
+          mb: 3,
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          borderRadius: '20px',
+          boxShadow: '0 8px 32px rgba(240, 147, 251, 0.4)'
+        }}>
           <CardContent>
-            <Typography level="h2" textAlign="center" mb={4}>
-              {currentQuestion.question}
+            <Typography 
+              level="h2" 
+              textAlign="center" 
+              mb={4}
+              sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '16px',
+                p: 3,
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              🤔 {currentQuestion.question}
             </Typography>
             
-            <Stack spacing={2}>
+            {/* 4 Quadrant Voting Layout */}
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gridTemplateRows: '1fr 1fr', 
+              gap: 3,
+              minHeight: '400px',
+              maxWidth: '800px',
+              margin: '0 auto'
+            }}>
               {currentQuestion.answers?.map((answer, index) => {
                 const voteCount = voteCounts[answer.id] || 0;
                 const totalVotes = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
                 const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
                 
+                // Vibrant colors for each quadrant
+                const quadrantColors = [
+                  { bg: '#FF6B6B', hover: '#FF5252', border: '#FF1744' }, // Red
+                  { bg: '#4ECDC4', hover: '#26C6DA', border: '#00BCD4' }, // Teal
+                  { bg: '#45B7D1', hover: '#2196F3', border: '#1976D2' }, // Blue
+                  { bg: '#96CEB4', hover: '#66BB6A', border: '#4CAF50' }  // Green
+                ];
+                
+                const colors = quadrantColors[index] || quadrantColors[0];
+                const isSelected = userVote === answer.id;
+                
                 return (
                   <Card
                     key={answer.id}
-                    variant="outlined"
                     sx={{
                       cursor: 'pointer',
-                      border: userVote === answer.id ? 2 : 1,
-                      borderColor: userVote === answer.id ? 'primary.500' : 'neutral.300'
+                      background: isSelected 
+                        ? `linear-gradient(135deg, ${colors.bg} 0%, ${colors.hover} 100%)`
+                        : `linear-gradient(135deg, ${colors.bg}40 0%, ${colors.bg}20 100%)`,
+                      border: `3px solid ${isSelected ? colors.border : colors.bg}`,
+                      borderRadius: '20px',
+                      transition: 'all 0.3s ease',
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: isSelected 
+                        ? `0 8px 25px ${colors.bg}60` 
+                        : `0 4px 15px ${colors.bg}40`,
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: `0 12px 30px ${colors.bg}80`,
+                        background: `linear-gradient(135deg, ${colors.hover}80 0%, ${colors.bg}60 100%)`
+                      },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      minHeight: '180px',
+                      position: 'relative',
+                      overflow: 'hidden'
                     }}
                     onClick={() => !showResult && castVote(answer.id)}
                   >
-                    <CardContent>
-                      <Typography level="h4" mb={1}>
-                        {String.fromCharCode(65 + index)}: {answer.text}
+                    {/* Letter Badge */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 15,
+                      left: 15,
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: isSelected ? '#FFF' : colors.border,
+                      color: isSelected ? colors.border : '#FFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: '18px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                    }}>
+                      {String.fromCharCode(65 + index)}
+                    </Box>
+                    
+                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                      <Typography 
+                        level="h4" 
+                        sx={{ 
+                          color: isSelected ? '#FFF' : colors.border,
+                          fontWeight: 'bold',
+                          mb: 2,
+                          textShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.3)' : 'none'
+                        }}
+                      >
+                        {answer.text}
                       </Typography>
                       
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography level="body2">
-                          {voteCount} Stimme{voteCount !== 1 ? 'n' : ''}
+                      {/* Vote Progress */}
+                      <Box sx={{ 
+                        mt: 2,
+                        background: 'rgba(255,255,255,0.3)',
+                        borderRadius: '10px',
+                        p: 1,
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        <Typography 
+                          level="body2" 
+                          sx={{ 
+                            color: '#FFF',
+                            fontWeight: 'bold',
+                            mb: 1,
+                            textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                          }}
+                        >
+                          {voteCount} Stimme{voteCount !== 1 ? 'n' : ''} ({percentage.toFixed(0)}%)
                         </Typography>
-                        <LinearProgress
-                          determinate
-                          value={percentage}
-                          sx={{ flexGrow: 1 }}
-                        />
-                        <Typography level="body2">
-                          {percentage.toFixed(0)}%
-                        </Typography>
+                        
+                        <Box sx={{
+                          height: 8,
+                          borderRadius: '4px',
+                          background: 'rgba(255,255,255,0.3)',
+                          overflow: 'hidden'
+                        }}>
+                          <Box sx={{
+                            width: `${percentage}%`,
+                            height: '100%',
+                            background: '#FFF',
+                            borderRadius: '4px',
+                            transition: 'width 0.5s ease'
+                          }} />
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>
                 );
               })}
-            </Stack>
+            </Box>
             
             {userVote && (
-              <Alert color="primary" sx={{ mt: 2 }}>
-                Sie haben gestimmt. Sie können Ihre Stimme jederzeit ändern.
+              <Alert 
+                sx={{ 
+                  mt: 3,
+                  background: 'rgba(255,255,255,0.9)',
+                  borderRadius: '12px',
+                  border: '2px solid #4CAF50',
+                  boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)'
+                }}
+              >
+                <Typography sx={{ fontWeight: 'bold', color: '#2E7D32' }}>
+                  ✅ Sie haben gestimmt. Sie können Ihre Stimme jederzeit ändern.
+                </Typography>
               </Alert>
             )}
           </CardContent>
@@ -591,9 +876,27 @@ const Game = () => {
 
       {/* Question Result */}
       {showResult && questionResult && !gameResult && (
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ 
+          mb: 3,
+          background: questionResult.was_correct 
+            ? 'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)' 
+            : 'linear-gradient(135deg, #FF5722 0%, #FF9800 100%)',
+          borderRadius: '20px',
+          boxShadow: questionResult.was_correct 
+            ? '0 8px 32px rgba(76, 175, 80, 0.4)'
+            : '0 8px 32px rgba(255, 87, 34, 0.4)'
+        }}>
           <CardContent textAlign="center">
-            <Typography level="h2" mb={3}>
+            <Typography 
+              level="h2" 
+              mb={3}
+              sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                fontSize: '2.5rem'
+              }}
+            >
               {questionResult.was_correct ? '🎉 Richtig!' : '😞 Falsch!'}
             </Typography>
             
@@ -608,12 +911,17 @@ const Game = () => {
                   return (
                     <Card key={answer.id} sx={{ 
                       mb: 1, 
-                      bgcolor: 'success.50', 
-                      border: '2px solid', 
-                      borderColor: 'success.500' 
+                      background: 'linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%)',
+                      border: '3px solid #2E7D32',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)'
                     }}>
                       <CardContent>
-                        <Typography level="body1" sx={{ fontWeight: 'bold' }}>
+                        <Typography level="body1" sx={{ 
+                          fontWeight: 'bold',
+                          color: '#FFF',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        }}>
                           ✅ {answer.text}
                         </Typography>
                       </CardContent>
@@ -632,12 +940,21 @@ const Game = () => {
                   return (
                     <Card key={answer.id} sx={{ 
                       mb: 1, 
-                      bgcolor: isCorrect ? 'success.50' : 'danger.50',
-                      border: '2px solid', 
-                      borderColor: isCorrect ? 'success.500' : 'danger.500'
+                      background: isCorrect 
+                        ? 'linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%)'
+                        : 'linear-gradient(135deg, #EF5350 0%, #F44336 100%)',
+                      border: `3px solid ${isCorrect ? '#2E7D32' : '#C62828'}`,
+                      borderRadius: '12px',
+                      boxShadow: isCorrect 
+                        ? '0 4px 15px rgba(76, 175, 80, 0.3)'
+                        : '0 4px 15px rgba(244, 67, 54, 0.3)'
                     }}>
                       <CardContent>
-                        <Typography level="body1" sx={{ fontWeight: 'bold' }}>
+                        <Typography level="body1" sx={{ 
+                          fontWeight: 'bold',
+                          color: '#FFF',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        }}>
                           {isCorrect ? '✅' : '❌'} {answer.text}
                         </Typography>
                       </CardContent>
@@ -648,42 +965,157 @@ const Game = () => {
               })}
             </Box>
             
-            <Typography level="h4" mb={2}>
-              {questionResult.was_correct ? 
-                `+${questionResult.points_earned} Punkte!` : 
-                'Keine Punkte'
-              }
-            </Typography>
-            
-            <Typography level="body2">
-              Aktuelle Punktzahl: {questionResult.total_score} / {gameState?.max_possible_score}
-            </Typography>
+            <Box sx={{
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '16px',
+              p: 3,
+              backdropFilter: 'blur(10px)',
+              mt: 3
+            }}>
+              <Typography 
+                level="h4" 
+                mb={2}
+                sx={{
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}
+              >
+                {questionResult.was_correct ? 
+                  `🎆 +${questionResult.points_earned} Punkte!` : 
+                  '🚫 Keine Punkte'
+                }
+              </Typography>
+              
+              <Typography 
+                level="body1"
+                sx={{
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                }}
+              >
+                🏆 Aktuelle Punktzahl: {questionResult.total_score} / {gameState?.max_possible_score}
+              </Typography>
+            </Box>
           </CardContent>
         </Card>
       )}
 
       {/* Host Controls - ALWAYS VISIBLE */}
       {isHost && (
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ 
+          mb: 3,
+          background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
+          borderRadius: '20px',
+          boxShadow: '0 8px 32px rgba(44, 62, 80, 0.4)'
+        }}>
           <CardContent>
-            <Typography level="h4" mb={2}>Host-Steuerung</Typography>
-            <Stack direction="row" spacing={2}>
+            <Typography 
+              level="h4" 
+              mb={2}
+              sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                textAlign: 'center'
+              }}
+            >
+              🎮 Host-Steuerung
+            </Typography>
+            
+            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', justifyContent: 'center' }}>
               {/* Always show all buttons */}
-              <Button onClick={endQuestion} color="primary" size="lg" disabled={showResult}>
-                Voting beenden
+              <Button 
+                onClick={endQuestion} 
+                size="lg" 
+                disabled={showResult}
+                sx={{
+                  background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 15px rgba(231, 76, 60, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(231, 76, 60, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)'
+                  }
+                }}
+              >
+                ⏹️ Voting beenden
               </Button>
               
-              <Button onClick={nextQuestion} color="success" size="lg" disabled={!showResult}>
-                Nächste Frage
+              <Button 
+                onClick={nextQuestion} 
+                size="lg" 
+                disabled={!showResult}
+                sx={{
+                  background: 'linear-gradient(135deg, #27AE60 0%, #229954 100%)',
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #229954 0%, #1E8449 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(39, 174, 96, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)'
+                  }
+                }}
+              >
+                ▶️ Nächste Frage
               </Button>
               
-              <Button onClick={endGame} color="warning" size="lg" disabled={!showResult}>
-                Spiel beenden
+              <Button 
+                onClick={endGame} 
+                size="lg" 
+                disabled={!showResult}
+                sx={{
+                  background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+                  color: '#FFF',
+                  fontWeight: 'bold',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 15px rgba(243, 156, 18, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #E67E22 0%, #D68910 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(243, 156, 18, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)'
+                  }
+                }}
+              >
+                🏁 Spiel beenden
               </Button>
               
               {gameResult && (
-                <Button onClick={() => setShowFinalResult(true)} color="warning" size="lg">
-                  Endergebnis anzeigen
+                <Button 
+                  onClick={() => setShowFinalResult(true)} 
+                  size="lg"
+                  sx={{
+                    background: 'linear-gradient(135deg, #8E44AD 0%, #7D3C98 100%)',
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 15px rgba(142, 68, 173, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #7D3C98 0%, #6C3483 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(142, 68, 173, 0.4)'
+                    }
+                  }}
+                >
+                  🏆 Endergebnis anzeigen
                 </Button>
               )}
             </Stack>

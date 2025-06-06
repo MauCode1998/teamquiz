@@ -153,100 +153,269 @@ function Gruppe() {
 
     return (
         <div className = 'parent'>
-        <h1>{groupName}</h1>
+        <h1 style={{
+            textAlign: 'center',
+            fontSize: '2.5rem',
+            fontWeight: 'bold',
+            color: '#FFF',
+            textShadow: '0 3px 6px rgba(0,0,0,0.5)',
+            margin: '2rem 0'
+        }}>🏆 {groupName} 🏆</h1>
         <div className='mittelPage'>
             
-            <Card className='listenCard'sx={{height:"auto"}}>
-                <div id='fachUeberschrift'>
-                    <h2>Alle Fächer von {groupName}</h2>
+            <Card className='listenCard' sx={{
+                height:"auto",
+                background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(78, 205, 196, 0.4)',
+                color: '#FFF',
+                position: 'relative'
+            }}>
+                <div style={{
+                    padding: '2rem',
+                    paddingRight: '280px' // Space for accordion
+                }}>
+                    <h2 style={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        fontSize: '1.8rem',
+                        margin: '0 0 2rem 0'
+                    }}>📚 Alle Fächer von {groupName}</h2>
+                    
+                    <List aria-labelledby="decorated-list-demo" sx={{
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '15px',
+                        p: 2,
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        {listItems.length === 0 ? (
+                            <ListItem sx={{
+                                textAlign: 'center',
+                                fontStyle: 'italic',
+                                color: 'rgba(255,255,255,0.8)',
+                                py: 3,
+                                background: 'rgba(255,255,255,0.05)',
+                                borderRadius: '10px'
+                            }}>
+                                📭 Noch keine Fächer vorhanden - fügen Sie das erste hinzu!
+                            </ListItem>
+                        ) : listItems}
+                    </List>
                 </div>
                 
-                <List aria-labelledby="decorated-list-demo">
-                    {listItems}
-                </List>
-                
-                <Accordion sx={{position:"absolute",right:0,minHeight:"50px"}}>
-                        <AccordionSummary>Fach hinzufügen</AccordionSummary>
-                        <AccordionDetails>
+                <div style={{
+                    position: 'absolute',
+                    top: '2rem',
+                    right: '2rem',
+                    width: '250px'
+                }}>
+                    <Accordion sx={{
+                        background: 'rgba(255,255,255,0.15)',
+                        borderRadius: '20px',
+                        border: 'none',
+                        backdropFilter: 'blur(15px)',
+                        boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
+                    }}>
+                        <AccordionSummary sx={{
+                            color: '#FFF',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            textAlign: 'center',
+                            '&:hover': {
+                                background: 'rgba(255,255,255,0.1)'
+                            }
+                        }}>➕ Fach hinzufügen</AccordionSummary>
+                        <AccordionDetails sx={{
+                            background: 'rgba(255,255,255,0.1)',
+                            borderRadius: '0 0 20px 20px',
+                            p: 2
+                        }}>
                         {fachError && (
-                            <Alert color="danger" sx={{ mb: 2 }}>
+                            <Alert sx={{ 
+                                mb: 2,
+                                background: 'rgba(255,255,255,0.95)',
+                                color: '#C0392B',
+                                borderRadius: '12px',
+                                border: 'none'
+                            }}>
                                 {fachError}
                             </Alert>
                         )}
                         <Input 
-                            placeholder='Neuer Fach Name'
+                            placeholder='Neuen Fach-Namen eingeben...'
                             value={neuesFach}
                             onChange={(e) => {
                                 neuesFachAktualisieren(e.target.value);
                                 if (fachError) setFachError(""); // Clear error when typing
                             }}
-                           
+                            sx={{
+                                background: 'rgba(255,255,255,0.95)',
+                                borderRadius: '12px',
+                                border: 'none',
+                                mb: 2,
+                                fontSize: '1rem'
+                            }}
                         />   
                         <Button
-                        onClick={fachErstellen}>Speichern</Button>
+                        onClick={fachErstellen}
+                        fullWidth
+                        sx={{
+                            background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
+                            color: '#FFF',
+                            fontWeight: 'bold',
+                            borderRadius: '12px',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)',
+                            '&:hover': {
+                                background: 'linear-gradient(135deg, #229954 0%, #27AE60 100%)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 6px 20px rgba(39, 174, 96, 0.4)'
+                            }
+                        }}>💾 Speichern</Button>
                         </AccordionDetails>
-                        
-                </Accordion>
+                    </Accordion>
+                </div>
                
             </Card>
 
 
             
-            <Card >
+            <Card sx={{
+                background: 'linear-gradient(135deg, #96CEB4 0%, #FCEA2B 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(150, 206, 180, 0.4)',
+                color: '#2C3E50'
+            }}>
                 
-                <h3>Gruppenmitglieder</h3>
+                <h3 style={{
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    fontSize: '1.5rem',
+                    margin: '1rem 0'
+                }}>👥 Gruppenmitglieder</h3>
                
-                <List aria-labelledby="decorated-list-demo">
+                <List aria-labelledby="decorated-list-demo" sx={{
+                    background: 'rgba(255,255,255,0.7)',
+                    borderRadius: '15px',
+                    p: 1,
+                    backdropFilter: 'blur(10px)'
+                }}>
                     {teilnehmerItems}
                 </List>
-                
-
 
                 </Card>
 
-            <Card sx={{}}>
+            <Card sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                color: '#FFF'
+            }}>
 
-            <h3>Person zur Gruppe einladen</h3>
-            {einladungsError && (
-                <Alert color="danger" sx={{ mb: 2 }}>
-                    {einladungsError}
-                </Alert>
-            )}
-            <Input 
-                placeholder='Benutzername'
-                value={einladungsName}
-                onChange={(e) => {
-                    setEinladungsName(e.target.value);
-                    if (einladungsError) setEinladungsError(""); // Clear error when typing
-                }}
-            />
-             <Button 
-              variant="solid" 
-              color="primary"
-              sx = {{marginTop: "0.5rem;"}} 
-              onClick={einladungSenden}
-              >Einladen</Button>
-          
+            <h3 style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                fontSize: '1.5rem',
+                margin: '1rem 0'
+            }}>📨 Person zur Gruppe einladen</h3>
+            
+            <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '15px',
+                padding: '1rem',
+                backdropFilter: 'blur(10px)'
+            }}>
+                {einladungsError && (
+                    <Alert sx={{ 
+                        mb: 2,
+                        background: 'rgba(255,255,255,0.9)',
+                        color: '#C0392B',
+                        borderRadius: '10px'
+                    }}>
+                        {einladungsError}
+                    </Alert>
+                )}
+                <Input 
+                    placeholder='Benutzername eingeben...'
+                    value={einladungsName}
+                    onChange={(e) => {
+                        setEinladungsName(e.target.value);
+                        if (einladungsError) setEinladungsError(""); // Clear error when typing
+                    }}
+                    sx={{
+                        background: 'rgba(255,255,255,0.9)',
+                        borderRadius: '10px',
+                        border: 'none',
+                        mb: 2
+                    }}
+                />
+                 <Button 
+                  onClick={einladungSenden}
+                  fullWidth
+                  sx={{
+                    background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    borderRadius: '10px',
+                    fontSize: '1.1rem',
+                    '&:hover': {
+                        background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100())'
+                    }
+                  }}>✉️ Einladen</Button>
+            </div>
                 
             </Card>
 
 
-            <Card>
-            <Button 
-              variant="outlined" 
-              color="primary"
-              sx = {{marginTop: "0.5rem;"}} 
-              onClick= {gruppeVerlassen}
-              >Austreten</Button>
-          
-    
-            <Button 
-              variant="outlined" 
-              color="danger"
-              sx = {{marginTop: "0.5rem;"}} 
-              onClick= {gruppeLöschen}
-              >Gruppe Löschen</Button>
-          
+            <Card sx={{
+                background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
+                borderRadius: '25px',
+                boxShadow: '0 15px 35px rgba(44, 62, 80, 0.4)',
+                color: '#FFF',
+                p: 3
+            }}>
+            <h3 style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                fontSize: '1.5rem',
+                margin: '0 0 1.5rem 0'
+            }}>⚙️ Gruppenaktionen</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Button 
+                  onClick= {gruppeVerlassen}
+                  fullWidth
+                  sx={{
+                    background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    borderRadius: '10px',
+                    fontSize: '1rem',
+                    '&:hover': {
+                        background: 'linear-gradient(135deg, #E67E22 0%, #D68910 100())'
+                    }
+                  }}
+                  >🚪 Austreten</Button>
+              
+                <Button 
+                  onClick= {gruppeLöschen}
+                  fullWidth
+                  sx={{
+                    background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    borderRadius: '10px',
+                    fontSize: '1rem',
+                    '&:hover': {
+                        background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100())'
+                    }
+                  }}
+                  >🗑️ Gruppe Löschen</Button>
+            </div>
                 
             </Card>
      

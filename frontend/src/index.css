@@ -2,13 +2,12 @@ body {
   display: flex;
   flex-direction: column;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
- 
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  background-attachment: fixed;
 }
 
 code {
@@ -18,9 +17,17 @@ code {
 
 
 .card {
-  border: solid red;
-  border-radius: 1rem;
-  box-shadow: 2px 2px 2px gray;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .headerNavigation {
@@ -104,24 +111,23 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 50vh;
+  min-height: 100vh;
   width: 100vw;
+  padding: 2rem;
 }
 
 .loginBox {
- 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  
-  border-radius: 1rem;
+  border-radius: 20px;
   width: 50vw;
   height: 50vh;
-  
-  align-items: center;
-  box-shadow:0.5px 0.5px 0px white;
-
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.07);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 
@@ -143,9 +149,10 @@ header {
   align-items: center; 
   height: 5rem;
   justify-content: center;
-  background-color: #3FA2D2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  overflow:hidden;
-  
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  border-bottom: 3px solid rgba(255,255,255,0.2);
 }
 

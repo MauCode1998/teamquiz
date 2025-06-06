@@ -186,18 +186,43 @@ function Lobby() {
                     </Alert>
                 )}
 
-                <Card>
-                    <h1 className='mainPageUeberschrift'>Lobby</h1>
-                    <Typography level="body-sm">
-                        Gruppe: {sessionData?.group?.name} | Fach: {sessionData?.subject?.name}
+                <Card sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '25px',
+                    boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                    color: '#FFF'
+                }}>
+                    <h1 className='mainPageUeberschrift' style={{
+                        textAlign: 'center',
+                        fontSize: '2.5rem',
+                        fontWeight: 'bold',
+                        textShadow: '0 3px 6px rgba(0,0,0,0.3)',
+                        margin: '0 0 1rem 0'
+                    }}>
+                        🎮 Lobby 🎮
+                    </h1>
+                    
+                    <Typography level="h4" sx={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        background: 'rgba(255,255,255,0.15)',
+                        borderRadius: '12px',
+                        p: 2,
+                        mb: 2
+                    }}>
+                        📚 {sessionData?.group?.name} | 📖 {sessionData?.subject?.name}
                     </Typography>
+                    
                     {sessionData && (
                         <>
-                            <Typography level="title-lg" sx={{ mt: 2, mb: 1 }}>
-                                Join Code: <strong>{sessionData.join_code}</strong>
-                            </Typography>
-                            <Typography level="body-xs">
-                                Teilen Sie diesen Code mit anderen Spielern
+                            
+                            <Typography level="body1" sx={{
+                                textAlign: 'center',
+                                opacity: 0.9,
+                                fontStyle: 'italic'
+                            }}>
+                                📤 Teilen Sie diesen Code mit anderen Spielern
                             </Typography>
                         </>
                     )}
@@ -205,8 +230,20 @@ function Lobby() {
 
                 {/* Invite section - only for host */}
                 {sessionData && sessionData.host.username === user?.username && (
-                    <Card>
-                        <h3>Spieler einladen</h3>
+                    <Card sx={{
+                        background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                        borderRadius: '20px',
+                        boxShadow: '0 10px 30px rgba(78, 205, 196, 0.3)',
+                        color: '#FFF'
+                    }}>
+                        <br></br>
+                        <h3 style={{
+                            textAlign: 'center',
+                            fontWeight: 'bold',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                            fontSize: '1.5rem',
+                            margin: '0 0 1rem 0'
+                        }}>📨 Spieler einladen</h3>
                         {inviteError && (
                             <Alert color="danger" sx={{ mb: 2 }}>
                                 {inviteError}
@@ -234,31 +271,84 @@ function Lobby() {
                             <Button
                                 onClick={sendInvitation}
                                 disabled={!inviteeUsername.trim()}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    borderRadius: '10px',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #FF5252 0%, #F44336 100%)'
+                                    }
+                                }}
                             >
-                                Einladen
+                                ✉️ Einladen
                             </Button>
                         </div>
                     </Card>
                 )}
 
-                <Card>
-                    <h2>Beigetreten ({participants.length})</h2>
-                    <Card sx={{ backgroundColor: "#FFF", height: "100%" }}>
+                <Card sx={{
+                    background: 'linear-gradient(135deg, #96CEB4 0%, #FCEA2B 100%)',
+                    borderRadius: '20px',
+                    boxShadow: '0 10px 30px rgba(150, 206, 180, 0.3)',
+                    color: '#2C3E50'
+                }}>
+                    <h2 style={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        fontSize: '1.8rem',
+                        margin: '0 0 1rem 0'
+                    }}>👥 Beigetreten ({participants.length})</h2>
+                    
+                    <Card sx={{ 
+                        backgroundColor: "rgba(255,255,255,0.9)", 
+                        height: "100%",
+                        borderRadius: '15px',
+                        backdropFilter: 'blur(10px)'
+                    }}>
                         <List>
                             {participants.length > 0 ? (
                                 participants.map(participant => (
-                                    <ListItem key={participant.user_id}>
-                                        <div>✅</div>
-                                        <ListItemDecorator>
+                                    <ListItem key={participant.user_id} sx={{
+                                        background: participant.is_host 
+                                            ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+                                            : 'linear-gradient(135deg, #E8F5E8 0%, #F0F8FF 100%)',
+                                        borderRadius: '12px',
+                                        mb: 1,
+                                        padding: '12px 16px',
+                                        boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+                                        border: participant.is_host ? '2px solid #FF8C00' : '1px solid #E0E0E0'
+                                    }}>
+                                        <div style={{ 
+                                            fontSize: '1.2rem',
+                                            marginRight: '12px'
+                                        }}>
+                                            {participant.is_host ? '👑' : '👤'}
+                                        </div>
+                                        <ListItemDecorator sx={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: participant.is_host ? 'bold' : 'normal',
+                                            color: participant.is_host ? '#B8860B' : '#2C3E50'
+                                        }}>
                                             {participant.username}
                                             {participant.is_host && ' (Host)'}
                                         </ListItemDecorator>
                                     </ListItem>
                                 ))
                             ) : (
-                                <ListItem>
-                                    <ListItemDecorator>
-                                        Warte auf Teilnehmer...
+                                <ListItem sx={{
+                                    background: 'linear-gradient(135deg, #F0F0F0 0%, #E0E0E0 100%)',
+                                    borderRadius: '12px',
+                                    padding: '20px',
+                                    textAlign: 'center',
+                                    fontStyle: 'italic'
+                                }}>
+                                    <ListItemDecorator sx={{
+                                        fontSize: '1.1rem',
+                                        color: '#666'
+                                    }}>
+                                        ⏳ Warte auf Teilnehmer...
                                     </ListItemDecorator>
                                 </ListItem>
                             )}
@@ -272,21 +362,59 @@ function Lobby() {
                                 onClick={startQuiz}
                                 fullWidth
                                 disabled={participants.length < 1}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    fontSize: '1.2rem',
+                                    borderRadius: '15px',
+                                    boxShadow: '0 6px 20px rgba(39, 174, 96, 0.4)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #229954 0%, #27AE60 100%)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 8px 25px rgba(39, 174, 96, 0.5)'
+                                    },
+                                    '&:disabled': {
+                                        background: 'rgba(150, 150, 150, 0.5)',
+                                        color: 'rgba(255,255,255,0.7)'
+                                    }
+                                }}
                             >
-                                Runde starten
+                                🚀 Runde starten
                             </Button>
                         ) : (
-                            <Typography level="body-sm" sx={{ textAlign: 'center', width: '100%', mt: 2 }}>
-                                Warte auf den Host zum Starten...
+                            <Typography level="h4" sx={{ 
+                                textAlign: 'center', 
+                                width: '100%', 
+                                mt: 2,
+                                color: '#2C3E50',
+                                fontWeight: 'bold',
+                                background: 'rgba(255,255,255,0.7)',
+                                borderRadius: '10px',
+                                p: 2,
+                                backdropFilter: 'blur(5px)'
+                            }}>
+                                ⏳ Warte auf den Host zum Starten...
                             </Typography>
                         )}
                         <Button
                             size="lg"
-                            variant="outlined"
-                            color="danger"
                             onClick={leaveSession}
+                            sx={{
+                                background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                                color: '#FFF',
+                                fontWeight: 'bold',
+                                fontSize: '1.1rem',
+                                borderRadius: '15px',
+                                boxShadow: '0 6px 20px rgba(231, 76, 60, 0.4)',
+                                '&:hover': {
+                                    background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100%)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 8px 25px rgba(231, 76, 60, 0.5)'
+                                }
+                            }}
                         >
-                            Verlassen
+                            🚪 Verlassen
                         </Button>
                     </div>
                 </Card>

@@ -26,8 +26,13 @@ function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null, d
             wsToken = token.substring(7);
         }
 
-        // Establish WebSocket connection
-        const ws = new WebSocket(`ws://localhost:8000/ws/${wsToken}`);
+        // Establish WebSocket connection - use same host and port as current page
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.host; // includes hostname:port
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/${wsToken}`;
+        
+        console.log('OnlineUsers WebSocket connecting to:', wsUrl);
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             console.log('WebSocket connected for group:', groupName);
@@ -127,25 +132,51 @@ function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null, d
             <ListItem 
                 key={userItem.user_id} 
                 sx={{
-                    "&:hover": { backgroundColor: '#DDD' },
-                    borderRadius: '1rem',
+                    background: isCurrentUser 
+                        ? 'linear-gradient(135deg, rgba(39, 174, 96, 0.2) 0%, rgba(46, 204, 113, 0.2) 100%)'
+                        : 'linear-gradient(135deg, rgba(44, 62, 80, 0.1) 0%, rgba(44, 62, 80, 0.05) 100%)',
+                    borderRadius: '10px',
+                    mb: 1,
                     display: "flex",
-                    textDecoration: 'none'
+                    alignItems: 'center',
+                    transition: 'all 0.3s ease',
+                    border: isCurrentUser ? '2px solid #27AE60' : '1px solid rgba(44, 62, 80, 0.1)',
+                    '&:hover': {
+                        background: isCurrentUser
+                            ? 'linear-gradient(135deg, rgba(39, 174, 96, 0.3) 0%, rgba(46, 204, 113, 0.3) 100%)'
+                            : 'linear-gradient(135deg, rgba(44, 62, 80, 0.2) 0%, rgba(44, 62, 80, 0.1) 100%)',
+                        transform: 'translateX(3px)'
+                    }
                 }}
             >
-                <ListItemDecorator>
-                    {userItem.username} {isCurrentUser && '(Du)'}
+                <ListItemDecorator sx={{ 
+                    color: '#2C3E50', 
+                    fontWeight: isCurrentUser ? 'bold' : 'normal',
+                    fontSize: '1rem'
+                }}>
+                    {isCurrentUser ? '👤' : '🟢'} {userItem.username} {isCurrentUser && '(Du)'}
                 </ListItemDecorator>
                 {showInviteButtons && !isCurrentUser && (
                     <Button 
-                        sx={{ marginLeft: "auto" }} 
-                        color={status === 'sent' ? 'success' : 'primary'}
+                        sx={{ 
+                            marginLeft: "auto",
+                            background: status === 'sent' 
+                                ? 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)'
+                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: '#FFF',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
+                            '&:hover': {
+                                transform: 'scale(1.05)'
+                            }
+                        }} 
                         size="sm"
                         onClick={() => handleInvite(userItem.username)}
                         disabled={status === 'loading' || status === 'sent'}
                         loading={status === 'loading'}
                     >
-                        {status === 'sent' ? 'Eingeladen ✓' : 'Einladen'}
+                        {status === 'sent' ? '✅ Eingeladen' : '📨 Einladen'}
                     </Button>
                 )}
             </ListItem>
@@ -153,19 +184,46 @@ function OnlineUsers({ groupName, showInviteButtons = false, sessionId = null, d
     });
 
     return (
-        <Card>
-            <h3>🟢 Online ({onlineUsers.length})</h3>
-            <Divider />
+        <Card sx={{
+            background: 'linear-gradient(135deg, #96CEB4 0%, #FCEA2B 100%)',
+            borderRadius: '25px',
+            boxShadow: '0 15px 35px rgba(150, 206, 180, 0.4)',
+            color: '#2C3E50'
+        }}>
+            <h3 style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                fontSize: '1.5rem',
+                margin: '1rem 0'
+            }}>🟢 Online ({onlineUsers.length})</h3>
+            
             {error && (
-                <Alert color="danger" sx={{ mb: 2 }} onClose={() => setError('')}>
+                <Alert sx={{
+                    mb: 2,
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#C0392B',
+                    borderRadius: '10px'
+                }} onClose={() => setError('')}>
                     {error}
                 </Alert>
             )}
-            <Card sx={{ backgroundColor: "#FFF", height: "100%" }}>
+            
+            <Card sx={{ 
+                backgroundColor: "rgba(255,255,255,0.7)", 
+                height: "100%",
+                borderRadius: '15px',
+                backdropFilter: 'blur(10px)'
+            }}>
                 <List aria-labelledby="online-users-list">
                     {userItems.length > 0 ? userItems : (
-                        <ListItem>
-                            <ListItemDecorator>Keine Benutzer online</ListItemDecorator>
+                        <ListItem sx={{
+                            textAlign: 'center',
+                            fontStyle: 'italic',
+                            color: '#666',
+                            py: 2
+                        }}>
+                            <ListItemDecorator>Keine Benutzer online 📭</ListItemDecorator>
                         </ListItem>
                     )}
                 </List>

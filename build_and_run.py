@@ -19,7 +19,6 @@ open -a 'Google Chrome' 'http://localhost:8000'
 osascript -e 'tell application "Safari" to activate'
 """
 
-
 bashscript_4 = """
 lsof -t -i 8000 | xargs kill
 cd backend 

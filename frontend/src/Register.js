@@ -124,58 +124,115 @@ const Register = () => {
       }}
     >
       <Card
-        variant="outlined"
         sx={{
-          width: 400,
+          width: 450,
           p: 4,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          borderRadius: '30px',
+          boxShadow: '0 20px 60px rgba(240, 147, 251, 0.4)',
+          color: '#FFF',
+          border: 'none'
         }}
       >
-        <Typography level="h3" sx={{ mb: 3, textAlign: 'center' }}>
-          Registrierung
+        <Typography level="h2" sx={{ 
+          mb: 3, 
+          textAlign: 'center',
+          fontWeight: 'bold',
+          textShadow: '0 3px 6px rgba(0,0,0,0.3)',
+          fontSize: '2.5rem'
+        }}>
+          📝 Registrierung
         </Typography>
 
         {error && (
-          <Alert color="danger" sx={{ mb: 2 }}>
+          <Alert sx={{
+            mb: 2,
+            background: 'rgba(255,255,255,0.95)',
+            color: '#C0392B',
+            borderRadius: '12px',
+            border: 'none'
+          }}>
             {error}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <FormControl sx={{ mb: 2 }}>
-            <FormLabel>Benutzername</FormLabel>
-            <Input
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Mindestens 3 Zeichen"
-              disabled={loading}
-            />
-          </FormControl>
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '20px',
+          padding: '2rem',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <form onSubmit={handleSubmit}>
+            <FormControl sx={{ mb: 2 }}>
+              <FormLabel sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>👤 Benutzername</FormLabel>
+              <Input
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Mindestens 3 Zeichen"
+                disabled={loading}
+                sx={{
+                  background: 'rgba(255,255,255,0.95)',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '1rem'
+                }}
+              />
+            </FormControl>
 
-          <FormControl sx={{ mb: 2 }}>
-            <FormLabel>E-Mail</FormLabel>
-            <Input
-              name="email"
-              type="text"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="name@example.com"
-              disabled={loading}
-            />
-          </FormControl>
+            <FormControl sx={{ mb: 2 }}>
+              <FormLabel sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>📧 E-Mail</FormLabel>
+              <Input
+                name="email"
+                type="text"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="name@example.com"
+                disabled={loading}
+                sx={{
+                  background: 'rgba(255,255,255,0.95)',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '1rem'
+                }}
+              />
+            </FormControl>
 
-          <FormControl sx={{ mb: 1 }}>
-            <FormLabel>Passwort</FormLabel>
-            <Input
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Mindestens 6 Zeichen"
-              disabled={loading}
-            />
-          </FormControl>
+            <FormControl sx={{ mb: 1 }}>
+              <FormLabel sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>🔒 Passwort</FormLabel>
+              <Input
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Mindestens 6 Zeichen"
+                disabled={loading}
+                sx={{
+                  background: 'rgba(255,255,255,0.95)',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '1rem'
+                }}
+              />
+            </FormControl>
 
           {formData.password && (
             <Box sx={{ mb: 2 }}>
@@ -191,34 +248,70 @@ const Register = () => {
             </Box>
           )}
 
-          <FormControl sx={{ mb: 3 }}>
-            <FormLabel>Passwort bestätigen</FormLabel>
-            <Input
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Passwort wiederholen"
-              disabled={loading}
-            />
-          </FormControl>
+            <FormControl sx={{ mb: 3 }}>
+              <FormLabel sx={{
+                color: '#FFF',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>🔁 Passwort bestätigen</FormLabel>
+              <Input
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Passwort wiederholen"
+                disabled={loading}
+                sx={{
+                  background: 'rgba(255,255,255,0.95)',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '1rem'
+                }}
+              />
+            </FormControl>
 
-          <Button
-            type="submit"
-            fullWidth
-            loading={loading}
-            sx={{ mb: 2 }}
-          >
-            Registrieren
-          </Button>
+            <Button
+              type="submit"
+              fullWidth
+              loading={loading}
+              sx={{ 
+                mb: 3,
+                background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                color: '#FFF',
+                fontWeight: 'bold',
+                borderRadius: '15px',
+                fontSize: '1.2rem',
+                padding: '12px',
+                boxShadow: '0 6px 20px rgba(78, 205, 196, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(78, 205, 196, 0.6)'
+                }
+              }}
+            >
+              🚀 Registrieren
+            </Button>
 
-          <Typography level="body-sm" sx={{ textAlign: 'center' }}>
-            Bereits registriert?{' '}
-            <Link to="/" style={{ textDecoration: 'none' }}>
-              Zum Login
-            </Link>
-          </Typography>
-        </form>
+            <Typography level="h4" sx={{ 
+              textAlign: 'center',
+              color: '#FFF',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              Bereits registriert?{' '}
+              <Link to="/" style={{ 
+                color: '#4ECDC4',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Zum Login 🔑
+              </Link>
+            </Typography>
+          </form>
+        </div>
       </Card>
     </Box>
   );
