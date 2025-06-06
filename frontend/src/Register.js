@@ -121,25 +121,28 @@ const Register = () => {
         backgroundImage: 'url(/background.jpeg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        padding: { xs: 2, sm: 3 }
       }}
     >
       <Card
         sx={{
-          width: 450,
-          p: 4,
+          width: { xs: '100%', sm: '450px', md: '500px' },
+          maxWidth: '500px',
+          p: { xs: 2, sm: 3, md: 4 },
           background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          borderRadius: '30px',
+          borderRadius: { xs: '20px', sm: '25px', md: '30px' },
           boxShadow: '0 20px 60px rgba(240, 147, 251, 0.4)',
           color: '#FFF',
-          border: 'none'
+          border: 'none',
+          mx: 'auto'
         }}
       >
         <Typography level="h2" sx={{ 
-          mb: 3, 
+          mb: { xs: 2, sm: 3 }, 
           textAlign: 'center',
           fontWeight: 'bold',
           textShadow: '0 3px 6px rgba(0,0,0,0.3)',
-          fontSize: '2.5rem'
+          fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
         }}>
           📝 Registrierung
         </Typography>
@@ -156,10 +159,10 @@ const Register = () => {
           </Alert>
         )}
 
-        <div style={{
+        <Box sx={{
           background: 'rgba(255,255,255,0.1)',
           borderRadius: '20px',
-          padding: '2rem',
+          padding: { xs: '1.5rem', sm: '2rem' },
           backdropFilter: 'blur(10px)'
         }}>
           <form onSubmit={handleSubmit}>
@@ -167,7 +170,7 @@ const Register = () => {
               <FormLabel sx={{
                 color: '#FFF',
                 fontWeight: 'bold',
-                fontSize: '1.1rem',
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 mb: 1
               }}>👤 Benutzername</FormLabel>
@@ -181,7 +184,8 @@ const Register = () => {
                   background: 'rgba(255,255,255,0.95)',
                   borderRadius: '12px',
                   border: 'none',
-                  fontSize: '1rem'
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  padding: { xs: '0.75rem', sm: '1rem' }
                 }}
               />
             </FormControl>
@@ -190,7 +194,7 @@ const Register = () => {
               <FormLabel sx={{
                 color: '#FFF',
                 fontWeight: 'bold',
-                fontSize: '1.1rem',
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 mb: 1
               }}>📧 E-Mail</FormLabel>
@@ -205,7 +209,8 @@ const Register = () => {
                   background: 'rgba(255,255,255,0.95)',
                   borderRadius: '12px',
                   border: 'none',
-                  fontSize: '1rem'
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  padding: { xs: '0.75rem', sm: '1rem' }
                 }}
               />
             </FormControl>
@@ -214,7 +219,7 @@ const Register = () => {
               <FormLabel sx={{
                 color: '#FFF',
                 fontWeight: 'bold',
-                fontSize: '1.1rem',
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 mb: 1
               }}>🔒 Passwort</FormLabel>
@@ -229,14 +234,15 @@ const Register = () => {
                   background: 'rgba(255,255,255,0.95)',
                   borderRadius: '12px',
                   border: 'none',
-                  fontSize: '1rem'
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  padding: { xs: '0.75rem', sm: '1rem' }
                 }}
               />
             </FormControl>
 
           {formData.password && (
             <Box sx={{ mb: 2 }}>
-              <Typography level="body-xs" sx={{ mb: 0.5 }}>
+              <Typography level="body-xs" sx={{ mb: 0.5, color: '#FFF' }}>
                 Passwortstärke
               </Typography>
               <LinearProgress
@@ -252,7 +258,7 @@ const Register = () => {
               <FormLabel sx={{
                 color: '#FFF',
                 fontWeight: 'bold',
-                fontSize: '1.1rem',
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 mb: 1
               }}>🔁 Passwort bestätigen</FormLabel>
@@ -267,7 +273,8 @@ const Register = () => {
                   background: 'rgba(255,255,255,0.95)',
                   borderRadius: '12px',
                   border: 'none',
-                  fontSize: '1rem'
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  padding: { xs: '0.75rem', sm: '1rem' }
                 }}
               />
             </FormControl>
@@ -282,8 +289,8 @@ const Register = () => {
                 color: '#FFF',
                 fontWeight: 'bold',
                 borderRadius: '15px',
-                fontSize: '1.2rem',
-                padding: '12px',
+                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                padding: { xs: '10px', sm: '12px' },
                 boxShadow: '0 6px 20px rgba(78, 205, 196, 0.4)',
                 '&:hover': {
                   background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100%)',
@@ -295,10 +302,11 @@ const Register = () => {
               🚀 Registrieren
             </Button>
 
-            <Typography level="h4" sx={{ 
+            <Typography level="body1" sx={{ 
               textAlign: 'center',
               color: '#FFF',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              fontSize: { xs: '0.9rem', sm: '1rem' }
             }}>
               Bereits registriert?{' '}
               <Link to="/" style={{ 
@@ -311,7 +319,7 @@ const Register = () => {
               </Link>
             </Typography>
           </form>
-        </div>
+        </Box>
       </Card>
     </Box>
   );

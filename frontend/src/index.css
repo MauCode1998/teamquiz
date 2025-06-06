@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -8,6 +12,7 @@ body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 code {
@@ -31,41 +36,90 @@ code {
 }
 
 .headerNavigation {
-  
   position: absolute;
   right: 0;
-  margin-right: 5rem;
+  margin-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .headerNavigation {
+    margin-right: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .headerNavigation {
+    margin-right: 5rem;
+  }
 }
 
 .headerNavigationItem {
- 
   border: solid 1px;
-  margin: 1rem;
-  padding-right: 2rem;
+  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .headerNavigationItem {
+    margin: 1rem;
+    padding-right: 2rem;
+  }
 }
 
 .mittelPage {
   display: grid;
-  grid-template-columns: 70% 30%;
-  grid-template-rows: auto auto;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
   grid-template-areas:
-  "left right"
-  "full full";
-  gap: 2rem;
-  height: 100vh;
-  width: 90vw;
+  "left"
+  "right"
+  "full";
+  gap: 1rem;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
+@media (min-width: 768px) {
+  .mittelPage {
+    grid-template-columns: 60% 40%;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+    "left right"
+    "full full";
+    gap: 2rem;
+    padding: 2rem;
+  }
+}
 
-
+@media (min-width: 1024px) {
+  .mittelPage {
+    grid-template-columns: 70% 30%;
+    width: 90vw;
+  }
 }
 
 .parent {
-  
   gap: 1rem;
-  height: 100vh;
-  width: 90vw;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1400px;
   margin: auto;
+  padding: 1rem;
+}
 
+@media (min-width: 768px) {
+  .parent {
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .parent {
+    width: 90vw;
+  }
 }
 
 #fachUeberschrift {
@@ -77,17 +131,46 @@ code {
 
 
 #headerlinks {
- color: white;
- position: absolute;
- display: flex;
- right: 0;
- margin-right: 2rem;
+  color: white;
+  position: absolute;
+  display: flex;
+  flex-wrap: wrap;
+  right: 0;
+  margin-right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
+@media (min-width: 768px) {
+  #headerlinks {
+    margin-right: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  #headerlinks {
+    margin-right: 2rem;
+  }
 }
 
 .headerLinkElement {
-  margin-right: 1rem;
-  margin-left: 1rem;
+  margin: 0.25rem;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 768px) {
+  .headerLinkElement {
+    margin-right: 0.5rem;
+    margin-left: 0.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .headerLinkElement {
+    margin-right: 1rem;
+    margin-left: 1rem;
+  }
 }
 #alleTeilnehmerCard {
   grid-area: left;
@@ -113,7 +196,13 @@ a {
   justify-content: center;
   min-height: 100vh;
   width: 100vw;
-  padding: 2rem;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .loginPage {
+    padding: 2rem;
+  }
 }
 
 .loginBox {
@@ -122,12 +211,29 @@ a {
   align-items: center;
   justify-content: center;
   border-radius: 20px;
-  width: 50vw;
-  height: 50vh;
+  width: 95%;
+  max-width: 500px;
+  min-height: 400px;
+  padding: 2rem 1rem;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
   box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.07);
   border: 1px solid rgba(255,255,255,0.2);
+}
+
+@media (min-width: 768px) {
+  .loginBox {
+    width: 70vw;
+    height: 50vh;
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .loginBox {
+    width: 50vw;
+    max-width: 600px;
+  }
 }
 
 
@@ -141,18 +247,61 @@ footer {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 20rem;
+  margin-top: 5rem;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  footer {
+    margin-top: 10rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  footer {
+    margin-top: 20rem;
+  }
 }
 header {
   display: flex;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   align-items: center; 
-  height: 5rem;
+  min-height: 4rem;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
   border-bottom: 3px solid rgba(255,255,255,0.2);
+  position: relative;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  header {
+    height: 5rem;
+    margin-bottom: 2rem;
+  }
+}
+
+/* Responsive utilities */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: initial;
+  }
+}
+
+.show-mobile {
+  display: initial;
+}
+
+@media (min-width: 768px) {
+  .show-mobile {
+    display: none;
+  }
 }
 

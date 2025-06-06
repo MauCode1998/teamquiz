@@ -7,6 +7,9 @@ import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import Input from '@mui/joy/Input';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Grid from '@mui/joy/Grid';
 import { useParams, useNavigate} from "react-router-dom";
 import Accordion from '@mui/joy/Accordion';
 import AccordionDetails from '@mui/joy/AccordionDetails';
@@ -138,292 +141,342 @@ function Gruppe() {
     
     const listItems = alleFaecher.map((fach,index) => 
                 
-                <ListItem key={index} sx={{"&:hover":{backgroundColor: '#DDD'}, width:"50vw",cursor: 'pointer',borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
-                 <Link component={RouterLink} to={`/groups/${encodeURIComponent(groupName)}/${encodeURIComponent(fach)}`}>{fach}</Link>
+                <ListItem key={index} sx={{
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
+                    borderRadius: '12px',
+                    mb: 1,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%)',
+                        transform: 'translateX(5px)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                    }
+                }}>
+                 <Link component={RouterLink} to={`/groups/${encodeURIComponent(groupName)}/${encodeURIComponent(fach)}`} sx={{
+                    color: '#FFF',
+                    fontWeight: 'bold',
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
+                    textDecoration: 'none',
+                    width: '100%',
+                    '&:hover': { textDecoration: 'none' }
+                 }}>📖 {fach}</Link>
                 </ListItem>
      
     )
     
 
     const teilnehmerItems = alleTeilnehmer.map((einzelTeilnehmer, index) => 
-        <ListItem key={index} sx={{"&:hover":{backgroundColor: '#DDD'}, cursor:"point",width:"50vw",borderRadius: '1rem',underline:'hidden',textDecoration:'none'}}>
-         <ListItemDecorator><span role="img" aria-label="fire">🔥</span></ListItemDecorator> {einzelTeilnehmer}
+        <ListItem key={index} sx={{
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '10px',
+            mb: 0.5,
+            padding: { xs: '8px', sm: '12px' }
+        }}>
+         <ListItemDecorator><span role="img" aria-label="fire">🔥</span></ListItemDecorator> 
+         <Typography sx={{ color: '#2C3E50', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+            {einzelTeilnehmer}
+         </Typography>
         </ListItem>
 )
 
     return (
-        <div className = 'parent'>
-        <h1 style={{
+        <Box className='parent' sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <Typography level="h1" sx={{
             textAlign: 'center',
-            fontSize: '2.5rem',
+            fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
             fontWeight: 'bold',
             color: '#FFF',
             textShadow: '0 3px 6px rgba(0,0,0,0.5)',
-            margin: '2rem 0'
-        }}>🏆 {groupName} 🏆</h1>
-        <div className='mittelPage'>
-            
-            <Card className='listenCard' sx={{
-                height:"auto",
-                background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
-                borderRadius: '25px',
-                boxShadow: '0 15px 35px rgba(78, 205, 196, 0.4)',
-                color: '#FFF',
-                position: 'relative'
-            }}>
-                <div style={{
-                    padding: '2rem',
-                    paddingRight: '280px' // Space for accordion
+            mb: { xs: 2, sm: 3 }
+        }}>🏆 {groupName} 🏆</Typography>
+        
+        <Grid 
+            container 
+            spacing={{ xs: 2, sm: 3 }}
+            sx={{ 
+                maxWidth: { lg: '1200px' },
+                mx: 'auto'
+            }}
+        >
+            {/* Subjects Card */}
+            <Grid xs={12} lg={8}>
+                <Card sx={{
+                    height:"auto",
+                    background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
+                    borderRadius: '25px',
+                    boxShadow: '0 15px 35px rgba(78, 205, 196, 0.4)',
+                    color: '#FFF',
+                    position: 'relative',
+                    p: { xs: 2, sm: 3 }
                 }}>
-                    <h2 style={{
+                    <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        gap: 2
+                    }}>
+                        <Box sx={{ flex: 1, width: '100%' }}>
+                            <Typography level="h2" sx={{
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                                mb: 2
+                            }}>📚 Alle Fächer von {groupName}</Typography>
+                            
+                            <List aria-labelledby="decorated-list-demo" sx={{
+                                background: 'rgba(255,255,255,0.1)',
+                                borderRadius: '15px',
+                                p: 2,
+                                backdropFilter: 'blur(10px)'
+                            }}>
+                                {listItems.length === 0 ? (
+                                    <ListItem sx={{
+                                        textAlign: 'center',
+                                        fontStyle: 'italic',
+                                        color: 'rgba(255,255,255,0.8)',
+                                        py: 3,
+                                        background: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '10px'
+                                    }}>
+                                        📭 Noch keine Fächer vorhanden - fügen Sie das erste hinzu!
+                                    </ListItem>
+                                ) : listItems}
+                            </List>
+                        </Box>
+                        
+                        <Box sx={{ 
+                            width: { xs: '100%', md: '250px' },
+                            flexShrink: 0
+                        }}>
+                            <Accordion sx={{
+                                background: 'rgba(255,255,255,0.15)',
+                                borderRadius: '20px',
+                                border: 'none',
+                                backdropFilter: 'blur(15px)',
+                                boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
+                            }}>
+                                <AccordionSummary sx={{
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    fontSize: { xs: '1rem', sm: '1.1rem' },
+                                    textAlign: 'center',
+                                    '&:hover': {
+                                        background: 'rgba(255,255,255,0.1)'
+                                    }
+                                }}>➕ Fach hinzufügen</AccordionSummary>
+                                <AccordionDetails sx={{
+                                    background: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '0 0 20px 20px',
+                                    p: 2
+                                }}>
+                                {fachError && (
+                                    <Alert sx={{ 
+                                        mb: 2,
+                                        background: 'rgba(255,255,255,0.95)',
+                                        color: '#C0392B',
+                                        borderRadius: '12px',
+                                        border: 'none'
+                                    }}>
+                                        {fachError}
+                                    </Alert>
+                                )}
+                                <Input 
+                                    placeholder='Neuen Fach-Namen eingeben...'
+                                    value={neuesFach}
+                                    onChange={(e) => {
+                                        neuesFachAktualisieren(e.target.value);
+                                        if (fachError) setFachError(""); // Clear error when typing
+                                    }}
+                                    sx={{
+                                        background: 'rgba(255,255,255,0.95)',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        mb: 2,
+                                        fontSize: { xs: '0.9rem', sm: '1rem' }
+                                    }}
+                                />   
+                                <Button
+                                onClick={fachErstellen}
+                                fullWidth
+                                sx={{
+                                    background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
+                                    color: '#FFF',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                                    boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #229954 0%, #27AE60 100%)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 6px 20px rgba(39, 174, 96, 0.4)'
+                                    }
+                                }}>💾 Speichern</Button>
+                                </AccordionDetails>
+                            </Accordion>
+                        </Box>
+                    </Box>
+                </Card>
+            </Grid>
+
+            {/* Right Column - Members and Invite */}
+            <Grid xs={12} lg={4}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 } }}>
+                    {/* Members Card */}
+                    <Card sx={{
+                        background: 'linear-gradient(135deg, #96CEB4 0%, #FCEA2B 100%)',
+                        borderRadius: '25px',
+                        boxShadow: '0 15px 35px rgba(150, 206, 180, 0.4)',
+                        color: '#2C3E50',
+                        p: { xs: 2, sm: 3 }
+                    }}>
+                        
+                        <Typography level="h3" sx={{
+                            textAlign: 'center',
+                            fontWeight: 'bold',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                            mb: 2
+                        }}>👥 Gruppenmitglieder</Typography>
+                       
+                        <List aria-labelledby="decorated-list-demo" sx={{
+                            background: 'rgba(255,255,255,0.7)',
+                            borderRadius: '15px',
+                            p: 1,
+                            backdropFilter: 'blur(10px)'
+                        }}>
+                            {teilnehmerItems}
+                        </List>
+
+                    </Card>
+
+                    {/* Invite Card */}
+                    <Card sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '25px',
+                        boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                        color: '#FFF',
+                        p: { xs: 2, sm: 3 }
+                    }}>
+
+                    <Typography level="h3" sx={{
                         textAlign: 'center',
                         fontWeight: 'bold',
                         textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                        fontSize: '1.8rem',
-                        margin: '0 0 2rem 0'
-                    }}>📚 Alle Fächer von {groupName}</h2>
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                        mb: 2
+                    }}>📨 Person zur Gruppe einladen</Typography>
                     
-                    <List aria-labelledby="decorated-list-demo" sx={{
+                    <Box sx={{
                         background: 'rgba(255,255,255,0.1)',
                         borderRadius: '15px',
-                        p: 2,
+                        padding: '1rem',
                         backdropFilter: 'blur(10px)'
                     }}>
-                        {listItems.length === 0 ? (
-                            <ListItem sx={{
-                                textAlign: 'center',
-                                fontStyle: 'italic',
-                                color: 'rgba(255,255,255,0.8)',
-                                py: 3,
-                                background: 'rgba(255,255,255,0.05)',
-                                borderRadius: '10px'
-                            }}>
-                                📭 Noch keine Fächer vorhanden - fügen Sie das erste hinzu!
-                            </ListItem>
-                        ) : listItems}
-                    </List>
-                </div>
-                
-                <div style={{
-                    position: 'absolute',
-                    top: '2rem',
-                    right: '2rem',
-                    width: '250px'
-                }}>
-                    <Accordion sx={{
-                        background: 'rgba(255,255,255,0.15)',
-                        borderRadius: '20px',
-                        border: 'none',
-                        backdropFilter: 'blur(15px)',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
-                    }}>
-                        <AccordionSummary sx={{
-                            color: '#FFF',
-                            fontWeight: 'bold',
-                            fontSize: '1.1rem',
-                            textAlign: 'center',
-                            '&:hover': {
-                                background: 'rgba(255,255,255,0.1)'
-                            }
-                        }}>➕ Fach hinzufügen</AccordionSummary>
-                        <AccordionDetails sx={{
-                            background: 'rgba(255,255,255,0.1)',
-                            borderRadius: '0 0 20px 20px',
-                            p: 2
-                        }}>
-                        {fachError && (
+                        {einladungsError && (
                             <Alert sx={{ 
                                 mb: 2,
-                                background: 'rgba(255,255,255,0.95)',
+                                background: 'rgba(255,255,255,0.9)',
                                 color: '#C0392B',
-                                borderRadius: '12px',
-                                border: 'none'
+                                borderRadius: '10px'
                             }}>
-                                {fachError}
+                                {einladungsError}
                             </Alert>
                         )}
                         <Input 
-                            placeholder='Neuen Fach-Namen eingeben...'
-                            value={neuesFach}
+                            placeholder='Benutzername eingeben...'
+                            value={einladungsName}
                             onChange={(e) => {
-                                neuesFachAktualisieren(e.target.value);
-                                if (fachError) setFachError(""); // Clear error when typing
+                                setEinladungsName(e.target.value);
+                                if (einladungsError) setEinladungsError(""); // Clear error when typing
                             }}
                             sx={{
-                                background: 'rgba(255,255,255,0.95)',
-                                borderRadius: '12px',
+                                background: 'rgba(255,255,255,0.9)',
+                                borderRadius: '10px',
                                 border: 'none',
                                 mb: 2,
-                                fontSize: '1rem'
+                                fontSize: { xs: '0.9rem', sm: '1rem' }
                             }}
-                        />   
-                        <Button
-                        onClick={fachErstellen}
-                        fullWidth
-                        sx={{
-                            background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
+                        />
+                         <Button 
+                          onClick={einladungSenden}
+                          fullWidth
+                          sx={{
+                            background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
                             color: '#FFF',
                             fontWeight: 'bold',
-                            borderRadius: '12px',
-                            fontSize: '1rem',
-                            boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)',
+                            borderRadius: '10px',
+                            fontSize: { xs: '1rem', sm: '1.1rem' },
                             '&:hover': {
-                                background: 'linear-gradient(135deg, #229954 0%, #27AE60 100%)',
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 6px 20px rgba(39, 174, 96, 0.4)'
+                                background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100())'
                             }
-                        }}>💾 Speichern</Button>
-                        </AccordionDetails>
-                    </Accordion>
-                </div>
-               
-            </Card>
+                          }}>✉️ Einladen</Button>
+                    </Box>
+                        
+                    </Card>
+                </Box>
+            </Grid>
 
-
-            
-            <Card sx={{
-                background: 'linear-gradient(135deg, #96CEB4 0%, #FCEA2B 100%)',
-                borderRadius: '25px',
-                boxShadow: '0 15px 35px rgba(150, 206, 180, 0.4)',
-                color: '#2C3E50'
-            }}>
-                
-                <h3 style={{
+            {/* Group Actions Card - Full Width */}
+            <Grid xs={12}>
+                <Card sx={{
+                    background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
+                    borderRadius: '25px',
+                    boxShadow: '0 15px 35px rgba(44, 62, 80, 0.4)',
+                    color: '#FFF',
+                    p: { xs: 2, sm: 3 }
+                }}>
+                <Typography level="h3" sx={{
                     textAlign: 'center',
                     fontWeight: 'bold',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    fontSize: '1.5rem',
-                    margin: '1rem 0'
-                }}>👥 Gruppenmitglieder</h3>
-               
-                <List aria-labelledby="decorated-list-demo" sx={{
-                    background: 'rgba(255,255,255,0.7)',
-                    borderRadius: '15px',
-                    p: 1,
-                    backdropFilter: 'blur(10px)'
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                    mb: 2
+                }}>⚙️ Gruppenaktionen</Typography>
+                
+                <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' }, 
+                    gap: { xs: '10px', sm: '12px' },
+                    justifyContent: 'center'
                 }}>
-                    {teilnehmerItems}
-                </List>
-
-                </Card>
-
-            <Card sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '25px',
-                boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
-                color: '#FFF'
-            }}>
-
-            <h3 style={{
-                textAlign: 'center',
-                fontWeight: 'bold',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                fontSize: '1.5rem',
-                margin: '1rem 0'
-            }}>📨 Person zur Gruppe einladen</h3>
-            
-            <div style={{
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '15px',
-                padding: '1rem',
-                backdropFilter: 'blur(10px)'
-            }}>
-                {einladungsError && (
-                    <Alert sx={{ 
-                        mb: 2,
-                        background: 'rgba(255,255,255,0.9)',
-                        color: '#C0392B',
-                        borderRadius: '10px'
-                    }}>
-                        {einladungsError}
-                    </Alert>
-                )}
-                <Input 
-                    placeholder='Benutzername eingeben...'
-                    value={einladungsName}
-                    onChange={(e) => {
-                        setEinladungsName(e.target.value);
-                        if (einladungsError) setEinladungsError(""); // Clear error when typing
-                    }}
-                    sx={{
-                        background: 'rgba(255,255,255,0.9)',
+                    <Button 
+                      onClick= {gruppeVerlassen}
+                      sx={{
+                        background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+                        color: '#FFF',
+                        fontWeight: 'bold',
                         borderRadius: '10px',
-                        border: 'none',
-                        mb: 2
-                    }}
-                />
-                 <Button 
-                  onClick={einladungSenden}
-                  fullWidth
-                  sx={{
-                    background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
-                    color: '#FFF',
-                    fontWeight: 'bold',
-                    borderRadius: '10px',
-                    fontSize: '1.1rem',
-                    '&:hover': {
-                        background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100())'
-                    }
-                  }}>✉️ Einladen</Button>
-            </div>
-                
-            </Card>
-
-
-            <Card sx={{
-                background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
-                borderRadius: '25px',
-                boxShadow: '0 15px 35px rgba(44, 62, 80, 0.4)',
-                color: '#FFF',
-                p: 3
-            }}>
-            <h3 style={{
-                textAlign: 'center',
-                fontWeight: 'bold',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                fontSize: '1.5rem',
-                margin: '0 0 1.5rem 0'
-            }}>⚙️ Gruppenaktionen</h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <Button 
-                  onClick= {gruppeVerlassen}
-                  fullWidth
-                  sx={{
-                    background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
-                    color: '#FFF',
-                    fontWeight: 'bold',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    '&:hover': {
-                        background: 'linear-gradient(135deg, #E67E22 0%, #D68910 100())'
-                    }
-                  }}
-                  >🚪 Austreten</Button>
-              
-                <Button 
-                  onClick= {gruppeLöschen}
-                  fullWidth
-                  sx={{
-                    background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
-                    color: '#FFF',
-                    fontWeight: 'bold',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    '&:hover': {
-                        background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100())'
-                    }
-                  }}
-                  >🗑️ Gruppe Löschen</Button>
-            </div>
-                
-            </Card>
-     
-
-            
-            
-        </div>
-        </div>
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        padding: { xs: '10px 20px', sm: '12px 30px' },
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #E67E22 0%, #D68910 100())'
+                        }
+                      }}
+                      >🚪 Austreten</Button>
+                  
+                    <Button 
+                      onClick= {gruppeLöschen}
+                      sx={{
+                        background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                        color: '#FFF',
+                        fontWeight: 'bold',
+                        borderRadius: '10px',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        padding: { xs: '10px 20px', sm: '12px 30px' },
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #C0392B 0%, #A93226 100())'
+                        }
+                      }}
+                      >🗑️ Gruppe Löschen</Button>
+                </Box>
+                    
+                </Card>
+            </Grid>
+        </Grid>
+        </Box>
     );
 }
 

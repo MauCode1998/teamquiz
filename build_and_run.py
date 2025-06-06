@@ -22,7 +22,7 @@ osascript -e 'tell application "Safari" to activate'
 bashscript_4 = """
 lsof -t -i 8000 | xargs kill
 cd backend 
-uvicorn app:app --reload --port 8000
+uvicorn app:app --reload --port 8000 --host 0.0.0.0
 """
 
 def server_start():

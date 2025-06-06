@@ -5,6 +5,7 @@ import Input from '@mui/joy/Input';
 import Card from '@mui/joy/Card';
 import Alert from '@mui/joy/Alert';
 import Typography from '@mui/joy/Typography';
+import Box from '@mui/joy/Box';
 import { useAuth } from './AuthContext';
 
 
@@ -34,20 +35,23 @@ function LoginBox() {
     return(
         <div className = 'loginPage'>
             <Card sx={{
-                width: "24rem",
+                width: { xs: '90%', sm: '24rem', md: '26rem' },
+                maxWidth: '26rem',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '30px',
+                borderRadius: { xs: '20px', sm: '25px', md: '30px' },
                 boxShadow: '0 20px 60px rgba(102, 126, 234, 0.4)',
                 color: '#FFF',
-                border: 'none'
+                border: 'none',
+                padding: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                mx: 'auto'
             }}>
-            <h2 className='loginBoxTitle' style={{
+            <Typography level="h2" sx={{
                 textAlign: 'center',
-                fontSize: '2.5rem',
+                fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
                 fontWeight: 'bold',
                 textShadow: '0 3px 6px rgba(0,0,0,0.3)',
-                margin: '1rem 0 2rem 0'
-            }}>🔐 Login</h2>
+                mb: { xs: 2, sm: 3 }
+            }}>🔐 Login</Typography>
             
             {error && (
                 <Alert sx={{
@@ -61,20 +65,20 @@ function LoginBox() {
                 </Alert>
             )}
             
-            <div style={{
+            <Box sx={{
                 background: 'rgba(255,255,255,0.1)',
                 borderRadius: '20px',
-                padding: '2rem',
+                padding: { xs: '1.5rem', sm: '2rem' },
                 backdropFilter: 'blur(10px)'
             }}>
-                <label style={{
+                <Typography level="body1" sx={{
                     color: '#FFF',
                     fontWeight: 'bold',
-                    fontSize: '1.1rem',
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
                     textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                     display: 'block',
-                    marginBottom: '8px'
-                }}>👤 Benutzername</label>
+                    mb: 1
+                }}>👤 Benutzername</Typography>
                 <Input 
                     placeholder='Benutzername eingeben...'
                     value={benutzername}
@@ -85,18 +89,19 @@ function LoginBox() {
                         borderRadius: '12px',
                         border: 'none',
                         mb: 2,
-                        fontSize: '1rem'
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        padding: { xs: '0.75rem', sm: '1rem' }
                     }}
                 />
                 
-                <label style={{
+                <Typography level="body1" sx={{
                     color: '#FFF',
                     fontWeight: 'bold',
-                    fontSize: '1.1rem',
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
                     textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                     display: 'block',
-                    marginBottom: '8px'
-                }}>🔒 Passwort</label>
+                    mb: 1
+                }}>🔒 Passwort</Typography>
                 <Input 
                     placeholder='Passwort eingeben...'
                     value={passwort}
@@ -109,7 +114,8 @@ function LoginBox() {
                         borderRadius: '12px',
                         border: 'none',
                         mb: 3,
-                        fontSize: '1rem'
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        padding: { xs: '0.75rem', sm: '1rem' }
                     }}
                 />
 
@@ -123,8 +129,8 @@ function LoginBox() {
                     color: '#FFF',
                     fontWeight: 'bold',
                     borderRadius: '15px',
-                    fontSize: '1.2rem',
-                    padding: '12px',
+                    fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                    padding: { xs: '10px', sm: '12px' },
                     boxShadow: '0 6px 20px rgba(78, 205, 196, 0.4)',
                     '&:hover': {
                         background: 'linear-gradient(135deg, #44A08D 0%, #3d8f7a 100%)',
@@ -136,11 +142,12 @@ function LoginBox() {
                   🚀 Anmelden
                 </Button>
                 
-                <Typography level="h4" sx={{ 
+                <Typography level="body1" sx={{ 
                     mt: 3, 
                     textAlign: 'center',
                     color: '#FFF',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
                 }}>
                     Noch kein Konto?{' '}
                     <Link to="/register" style={{ 
@@ -152,7 +159,7 @@ function LoginBox() {
                         Jetzt registrieren 📝
                     </Link>
                 </Typography>
-            </div>
+            </Box>
             </Card>
         </div>
     );
