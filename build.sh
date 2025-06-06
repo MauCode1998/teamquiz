@@ -15,9 +15,9 @@ cd frontend
 echo "Installing frontend dependencies..."
 npm install
 
-# Build frontend with legacy OpenSSL
+# Build frontend with legacy OpenSSL and ignore warnings
 echo "Building React app..."
-NODE_OPTIONS=--openssl-legacy-provider npm run build
+CI=false NODE_OPTIONS=--openssl-legacy-provider npm run build
 
 # Check if build was successful
 if [ -d "build" ]; then
