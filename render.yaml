@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: teamquiz
+    env: python
+    plan: free
+    buildCommand: |
+      # Install backend dependencies
+      pip install -r requirements.txt
+      # Install frontend dependencies and build
+      cd frontend
+      npm install
+      npm run build
+      cd ..
+    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: NODE_VERSION  
+        value: 18
+    disk:
+      name: teamquiz-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 1
