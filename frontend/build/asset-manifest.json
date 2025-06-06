@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/static/css/main.b49eb66c.chunk.css",
+    "main.js": "/static/js/main.e9984bb9.chunk.js",
+    "runtime-main.js": "/static/js/runtime-main.51c6d17a.js",
+    "static/js/2.001402cd.chunk.js": "/static/js/2.001402cd.chunk.js",
+    "static/js/3.4ba8a846.chunk.js": "/static/js/3.4ba8a846.chunk.js",
+    "index.html": "/index.html",
+    "precache-manifest.63a41ba94159a6137208946ee7dc135e.js": "/precache-manifest.63a41ba94159a6137208946ee7dc135e.js",
+    "service-worker.js": "/service-worker.js",
+    "static/js/2.001402cd.chunk.js.LICENSE.txt": "/static/js/2.001402cd.chunk.js.LICENSE.txt",
+    "static/media/logo.png": "/static/media/logo.9595cc1f.png",
+    "static/media/start.jpeg": "/static/media/start.bd134657.jpeg",
+    "static/media/teamquizlogo.jpeg": "/static/media/teamquizlogo.c6fc540a.jpeg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.51c6d17a.js",
+    "static/js/2.001402cd.chunk.js",
+    "static/css/main.b49eb66c.chunk.css",
+    "static/js/main.e9984bb9.chunk.js"
+  ]
+}
