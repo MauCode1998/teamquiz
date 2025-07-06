@@ -1,5 +1,5 @@
-import React from 'react'
-import Date from 'react'
+
+import React from 'react';
 
 function Footer() {
     return(

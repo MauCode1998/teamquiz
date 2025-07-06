@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
 import Card from '@mui/joy/Card';
-import Divider from '@mui/joy/Divider';
 import Button from '@mui/joy/Button';
 import { useAuth } from '../AuthContext';
 import api from '../api/axios';

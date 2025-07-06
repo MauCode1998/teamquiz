@@ -131,4 +131,4 @@ def main():
 
 if __name__ == "__main__":
     # Install psutil if not available
-    stop_servers()
+    main()

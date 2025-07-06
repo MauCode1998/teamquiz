@@ -103,7 +103,6 @@ class SessionParticipant(Base):
     session_id = Column(String, ForeignKey("quiz_sessions.id"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     joined_at = Column(DateTime, default=datetime.utcnow)
-    score = Column(Integer, default=0)
     is_host = Column(Boolean, default=False)
     
     # Relationships
@@ -174,3 +173,4 @@ class ChatMessage(Base):
     # Relationships
     session = relationship("QuizSession", back_populates="chat_messages")
     user = relationship("User")
+

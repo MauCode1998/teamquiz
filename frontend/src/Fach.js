@@ -14,7 +14,6 @@ import Input from '@mui/joy/Input';
 import { useParams, useNavigate } from "react-router-dom";
 import Accordion from '@mui/joy/Accordion';
 import AccordionDetails from '@mui/joy/AccordionDetails';
-import Bild from './start.jpeg';
 import AccordionGroup from '@mui/joy/AccordionGroup';
 import AccordionSummary from '@mui/joy/AccordionSummary';
 import Radio from '@mui/joy/Radio';
@@ -43,8 +42,6 @@ function Fach() {
     const gruppenname = groupName;
     // Remove hardcoded users - now handled by OnlineUsers component
     const [alleKarteikarten,setAlleKarteikarten] = useState([]);
-    const kartenId = "1"
-    const gameid = "2"
     const gesamtAnzahlFragen = alleKarteikarten.length
 
     const [neueKarteikarte,neueKarteikarteAktualisieren] = useState({

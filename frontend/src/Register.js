@@ -92,20 +92,20 @@ const Register = () => {
       navigate('/groups');
     } else {
       // Translate common English error messages to German
-      let germanError = result.error;
+      let errorMessage = result.error;
       if (result.error.includes('Username must contain only letters and numbers')) {
-        germanError = 'Benutzername darf nur Buchstaben und Zahlen enthalten';
+        errorMessage= 'Benutzername darf nur Buchstaben und Zahlen enthalten';
       } else if (result.error.includes('Username already registered')) {
-        germanError = 'Benutzername ist bereits registriert';
+        errorMessage = 'Benutzername ist bereits registriert';
       } else if (result.error.includes('Email already registered')) {
-        germanError = 'E-Mail-Adresse ist bereits registriert';
+        errorMessage = 'E-Mail-Adresse ist bereits registriert';
       } else if (result.error.includes('valid email') || result.error.includes('email') && result.error.includes('invalid')) {
-        germanError = 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
+        errorMessage = 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
       } else if (result.error.includes('Username must be at least 3 characters')) {
-        germanError = 'Benutzername muss mindestens 3 Zeichen lang sein';
+        errorMessage = 'Benutzername muss mindestens 3 Zeichen lang sein';
       }
       
-      setError(germanError);
+      setError(errorMessage);
       setLoading(false);
     }
   };

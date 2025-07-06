@@ -39,16 +39,7 @@ async def create_lobby(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     
-    # Check if session already exists
-    existing = db.query(QuizSession).filter(
-        QuizSession.subject_id == subject.id,
-        QuizSession.status == "waiting"
-    ).first()
-    
-    if existing:
-        raise HTTPException(status_code=400, detail="Session already exists")
-    
-    # Create new session
+    # Create new session (multiple sessions per subject are allowed)
     session = QuizSession(
         subject_id=subject.id,
         group_id=subject.group_id,
@@ -69,13 +60,6 @@ async def create_lobby(
     db.add(host_participant)
     db.commit()
     
-    print(f"\n🏁 NEW LOBBY CREATED:")
-    print(f"   Host: {current_user.username} (ID: {current_user.id})")
-    print(f"   Session ID: {session.id}")
-    print(f"   Join Code: {session.join_code}")
-    print(f"   Subject: {subject.name}")
-    print(f"   Group: {group.name}")
-    print(f"   Time: {datetime.utcnow()}")
     
     # Get participants (just host for now)
     participants = [{

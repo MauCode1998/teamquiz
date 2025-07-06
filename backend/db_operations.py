@@ -1,6 +1,5 @@
 from database import SessionLocal,engine,Base
-from models import User,Group,Invitation,Flashcard,Answer,UserGroupAssociation,Subject,QuizSession,SessionParticipant,LobbyInvitation,GameState,Vote,ChatMessage
-from sqlalchemy.orm import Session
+from models import User,Group,Invitation,Flashcard,Answer,UserGroupAssociation,Subject,QuizSession,GameState,Vote,ChatMessage
 from datetime import datetime
 import random
 
@@ -64,7 +63,7 @@ def get_invitations(username):
 def is_username_taken(username):
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
-    if user != None:
+    if user is not None:
         db.close()
         return True
     else:
@@ -75,7 +74,7 @@ def is_username_taken(username):
 def get_user_id(username):
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
-    if user != None:
+    if user is not None:
         db.close()
         return user.id
     else:
@@ -83,21 +82,6 @@ def get_user_id(username):
         return user
 
 
-def get_user(username):
-    db = SessionLocal()
-    user = db.query(User).filter(User.username == username).first()
-
-    
-
-    if user != None:
-        user_dict = {
-        "username":user.username,
-        "password":user.password
-    }
-        db.close()
-        return user_dict
-    else:
-        return user
 
 def get_username_by_id(id):
     db = SessionLocal()
@@ -107,11 +91,6 @@ def get_username_by_id(id):
     
 
 
-def get_users():
-    db = SessionLocal()
-    users = db.query(User).all()
-    db.close()
-    return users
 
 
 
@@ -121,7 +100,7 @@ def is_groupname_taken(groupname):
     db = SessionLocal()
 
     gruppenname = db.query(Group).filter(Group.name == groupname).first()
-    if gruppenname != None:
+    if gruppenname is not None:
         db.close()
         return True
     else:
@@ -163,12 +142,6 @@ def delete_group(gruppenname):
     db.close()
 
 
-def get_groups():
-    db = SessionLocal()
-    groups = db.query(User).all()
-    db.close()
-    return groups
-
 def get_user_groups(username: str):
     db = SessionLocal()
     
@@ -191,7 +164,7 @@ def get_user_groups(username: str):
 def get_group_id(gruppenname):
     db = SessionLocal()
     group = db.query(Group).filter(Group.name == gruppenname).first()
-    if group != None:
+    if group is not None:
         group_id = group.id
         db.close()
         return group_id
@@ -264,7 +237,7 @@ def is_user_in_group(username,groupname):
     db = SessionLocal()
     group = db.query(Group).filter(Group.name == groupname).first()
 
-    if group != None:
+    if group is not None:
         result = username in [userassociation.user.username for userassociation in group.group_users]
         db.close()
         return result
@@ -278,7 +251,7 @@ def is_subject_in_group(subjectname,group_id):
     subject = db.query(Subject).filter(Subject.name == subjectname, Subject.group_id == group_id).first()
     print(f"Checking if subject '{subjectname}' exists in group {group_id}: {subject is not None}")
 
-    if subject != None:
+    if subject is not None:
        db.close()
        return True
     else:
@@ -291,7 +264,7 @@ def get_group(name):
     group = db.query(Group).filter(Group.name == name).first()
 
     
-    if group != None:
+    if group is not None:
         subjects = [subjectobject.name for subjectobject in group.subjects]
         print(f"Group '{name}' has {len(subjects)} subjects: {subjects}")
         
@@ -385,14 +358,10 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
             return "Ein Fach mit diesem Namen existiert bereits in der Gruppe"
         
         # Update subject name - use merge to ensure proper update
-        old_name = subject.name
         subject.name = new_subjectname
         db.merge(subject)  # Use merge instead of direct commit
         db.commit()
         
-        # Verify the update
-        updated_subject = db.query(Subject).filter(Subject.id == subject.id).first()
-        print(f"DEBUG: After update - Subject ID {subject.id} now has name: '{updated_subject.name}'")
         return "Subject erfolgreich umbenannt"
         
     except Exception as e:
@@ -563,44 +532,6 @@ def delete_flashcard(flashcard_id: int):
 
 
 ##### GAME OPERATIONS #####
-
-def create_game_state(session_id: str) -> dict:
-    """Create initial game state for a session"""
-    db = SessionLocal()
-    try:
-        # Get session to calculate max possible score
-        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
-        if not session:
-            return None
-            
-        # Count flashcards for max score calculation
-        flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
-        max_possible_score = flashcard_count * 100  # 100 points per question
-        
-        game_state = GameState(
-            session_id=session_id,
-            max_possible_score=max_possible_score,
-            status="waiting"
-        )
-        
-        db.add(game_state)
-        db.commit()
-        db.refresh(game_state)
-        
-        # Convert to dictionary before closing session
-        return {
-            "session_id": game_state.session_id,
-            "current_question_index": game_state.current_question_index,
-            "current_flashcard_id": game_state.current_flashcard_id,
-            "total_score": game_state.total_score,
-            "max_possible_score": game_state.max_possible_score,
-            "status": game_state.status,
-            "question_started_at": game_state.question_started_at,
-            "started_at": game_state.started_at
-        }
-    finally:
-        db.close()
-
 
 def start_game(session_id: str) -> dict:
     """Start the game and prepare first question"""
@@ -966,78 +897,6 @@ def get_chat_messages(session_id: str, limit: int = 50) -> list:
         db.close()
 
 
-##### GAME STATE OPERATIONS #####
-def calculate_target_score(session_id: str):
-    """Calculate 90% target score for a session"""
-    db = SessionLocal()
-    try:
-        # Get session and subject
-        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
-        if not session:
-            return 0
-        
-        # Count flashcards in the subject
-        flashcard_count = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).count()
-        
-        # Each correct answer = 100 points, target = 90%
-        max_possible_score = flashcard_count * 100
-        target_score = int(max_possible_score * 0.9)
-        
-        return {
-            "target_score": target_score,
-            "max_possible_score": max_possible_score,
-            "total_questions": flashcard_count
-        }
-    finally:
-        db.close()
-
-
-def update_game_score(session_id: str, is_correct: bool):
-    """Update game score based on answer correctness"""
-    db = SessionLocal()
-    try:
-        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
-        if not game_state:
-            return False
-        
-        # Add 100 points if correct
-        if is_correct:
-            game_state.current_score += 100
-        
-        # Increment questions answered
-        game_state.questions_answered += 1
-        
-        db.commit()
-        db.refresh(game_state)
-        return True
-    finally:
-        db.close()
-
-
-def check_early_loss(session_id: str):
-    """Check if 90% target is still achievable"""
-    db = SessionLocal()
-    try:
-        game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
-        if not game_state:
-            return False
-        
-        current_score = game_state.current_score
-        questions_answered = game_state.questions_answered
-        total_questions = game_state.total_questions
-        
-        # Calculate remaining questions and max possible score
-        remaining_questions = total_questions - questions_answered
-        max_additional_score = remaining_questions * 100
-        max_achievable_score = current_score + max_additional_score
-        
-        # Calculate target (90% of total possible)
-        target_score = int(total_questions * 100 * 0.9)
-        
-        # Return True if loss is inevitable
-        return max_achievable_score < target_score
-    finally:
-        db.close()
 
 
 def calculate_final_result(session_id: str):

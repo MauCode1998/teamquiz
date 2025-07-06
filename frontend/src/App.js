@@ -5,7 +5,6 @@ import Gruppe from './Gruppe.js';
 import Gruppen from './Gruppen.js';
 import Lobby from './Lobby.js';
 import Game from './Game.js';
-import Karte from './Karte.js';
 import React from 'react';
 import LoginBox from './LoginBox.js';
 import Register from './Register.js';
@@ -36,11 +35,6 @@ function App() {
             <Route path="/groups/:groupName/:subject" element={
               <ProtectedRoute>
                 <Fach/>
-              </ProtectedRoute>
-            }/>
-            <Route path="/karte" element={
-              <ProtectedRoute>
-                <Karte/>
               </ProtectedRoute>
             }/>
             <Route path="/lobby/:sessionId" element={

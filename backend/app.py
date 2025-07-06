@@ -4,35 +4,63 @@ from typing import List
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+from schemas import (
+    GruppenRequest,
+    FachRequest,
+    FachRenameRequest,
+    FachDeleteRequest
+)
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from db_operations import *
+from db_operations import (
+    create_group,
+    is_user_in_group,
+    create_flashcard,
+    add_subject_to_group,
+    get_group_id,update_subject_name,
+    delete_group,
+    get_group,
+    delete_user_from_group,get_user_groups,
+    get_subject_cards,
+    delete_subject_from_group,get_invitations,
+    create_invitation,
+    add_user_to_group,
+    delete_invitation,
+    update_flashcard,
+    delete_flashcard,
+    start_game,
+    get_game_state,
+    cast_vote,
+    get_question_votes,
+    end_question,
+    next_question,
+    add_chat_message,
+    calculate_final_result,
+    get_chat_messages
+)
+import os
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from database import get_db, engine
 from auth import hash_password, verify_password, create_access_token, create_refresh_token, get_current_user, validate_refresh_token, verify_token_websocket
 from schemas import (
-    UserCreate, UserLogin, Token, TokenRefresh, UserResponse, 
+    UserCreate, Token, TokenRefresh, UserResponse, 
     FlashcardCreate, FlashcardUpdate, FlashcardDelete,
     SessionCreate, SessionResponse, SessionDetails, SessionJoin,
-    InvitationSend, InvitationResponse, PendingInvitation,
-    SessionStatusUpdate, ParticipantInfo, SubjectInfo, GroupInfo,
-    GameStateResponse, QuestionResponse, VoteCreate, VoteResponse,
-    VotesUpdate, QuestionResult, ChatMessageCreate, ChatMessageResponse,
-    GameResult
+    InvitationSend, InvitationResponse, PendingInvitation, VoteCreate, 
+    ChatMessageCreate
+    
 )
 from models import (
     User, RefreshToken, Base, QuizSession, SessionParticipant,
     LobbyInvitation, Subject, Group, Flashcard
 )
-from datetime import datetime, timezone
-import os
+from datetime import datetime
 import json
 import random
 import string
 from websocket_manager import manager
 from lobby_routes import router as lobby_router
-from cleanup_tasks import start_cleanup_task
 
 
 app = FastAPI()
@@ -40,36 +68,6 @@ app = FastAPI()
 # Create all database tables (especially important for test database)
 Base.metadata.create_all(bind=engine)
 
-class GruppenRequest(BaseModel):
-    gruppen_name:str
-
-class FachRequest(BaseModel):
-    fach_name:str
-    gruppen_name:str
-
-class FachRenameRequest(BaseModel):
-    old_fach_name: str
-    new_fach_name: str
-    gruppen_name: str
-
-class FachDeleteRequest(BaseModel):
-    fach_name: str
-    gruppen_name: str
-
-class KarteiKarteRequest(BaseModel):
-    Fach:str
-    Gruppe:str
-    Frage:str
-    Antwort1:str
-    Antwort2:str
-    Antwort3:str
-    Antwort4:str
-
-
-# Token storage is now handled by JWT and database
-
-# Serve React static files (only if build directory exists)
-import os
 if os.path.exists("../frontend/build/static"):
     app.mount("/static", StaticFiles(directory="../frontend/build/static"), name="static")
 elif os.path.exists("frontend/build/static"):
@@ -87,15 +85,6 @@ app.add_middleware(
 # Include lobby router
 app.include_router(lobby_router)
 
-# Start background cleanup task
-@app.on_event("startup")
-async def startup_event():
-    # Clean up old sessions on server start
-    cleanup_old_sessions()
-    
-    # Start background cleanup task
-    start_cleanup_task()
-    print("🧹 Background cleanup task started")
 
 def cleanup_old_sessions():
     """Clean up all existing sessions on server startup"""
@@ -105,24 +94,17 @@ def cleanup_old_sessions():
     db = SessionLocal()
     try:
         # Delete all related data first (foreign key constraints)
-        deleted_votes = db.query(Vote).delete()
-        deleted_chat = db.query(ChatMessage).delete()
-        deleted_game_states = db.query(GameState).delete()
-        deleted_participants = db.query(SessionParticipant).delete()
-        deleted_sessions = db.query(QuizSession).delete()
+        db.query(Vote).delete()
+        db.query(ChatMessage).delete()
+        db.query(GameState).delete()
+        db.query(SessionParticipant).delete()
+        db.query(QuizSession).delete()
         
         db.commit()
         
-        print(f"\n🗑️  STARTUP CLEANUP:")
-        print(f"   - Deleted {deleted_sessions} sessions")
-        print(f"   - Deleted {deleted_participants} participants")
-        print(f"   - Deleted {deleted_game_states} game states")
-        print(f"   - Deleted {deleted_votes} votes")
-        print(f"   - Deleted {deleted_chat} chat messages")
-        print(f"   ✅ All old sessions cleaned up!\n")
+       
         
-    except Exception as e:
-        print(f"❌ Error during session cleanup: {e}")
+    except Exception:
         db.rollback()
     finally:
         db.close()
@@ -130,11 +112,6 @@ def cleanup_old_sessions():
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    print(f"🔴 VALIDATION ERROR DEBUG:")
-    print(f"  - Request URL: {request.url}")
-    print(f"  - Request method: {request.method}")
-    print(f"  - Validation errors: {exc.errors()}")
-    print(f"  - Request body: {exc.body}")
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": str(exc.body)}
@@ -146,11 +123,11 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
     # Check if user already exists
     existing_user = db.query(User).filter(
-        (User.username == user_data.username) | (User.email == user_data.email)
+        (User.username.ilike(user_data.username)) | (User.email == user_data.email)
     ).first()
     
     if existing_user:
-        if existing_user.username == user_data.username:
+        if existing_user.username.lower() == user_data.username.lower():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already registered"
@@ -197,7 +174,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 @app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Login with username and password"""
-    user = db.query(User).filter(User.username == form_data.username).first()
+    user = db.query(User).filter(User.username.ilike(form_data.username)).first()
     
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
@@ -318,16 +295,10 @@ async def create_flashcard_new(flashcard_data: FlashcardCreate, current_user: Us
         )
 
 
-
 @app.post("/fach-erstellen")
 async def create_new_fach(fachrequest: FachRequest, current_user: User = Depends(get_current_user)):
-    print("gruppe wird erstellt!")
-    print(fachrequest)
-    username = current_user.username
 
     result = add_subject_to_group(fachrequest.fach_name,fachrequest.gruppen_name)
-    print(result)
-
     if result == "Subject ist bereits in der Gruppe angelegt":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -752,7 +723,7 @@ async def create_session(
     return SessionResponse(
         session_id=session.id,
         join_code=join_code,
-        websocket_url=f"/ws/{{token}}"
+        websocket_url=f"/ws/{{token}}" #noqa
     )
 
 
@@ -1009,33 +980,6 @@ async def reject_invitation(
     return {"status": "rejected"}
 
 
-@app.post("/api/session/start/{session_id}")
-async def start_session(
-    session_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Start a quiz session (host only)"""
-    session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
-    
-    if not session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Session not found"
-        )
-    
-    # Check if user is host
-    if session.host_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only host can start the session"
-        )
-    
-    # Update status
-    session.status = "starting"
-    db.commit()
-    
-    return {"status": "starting"}
 
 
 @app.post("/api/session/leave/{session_id}")
@@ -1204,7 +1148,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     "status": session.status
                 })
                 
-                print(f"🔥 DEBUG: Lobby update broadcast completed")
+              
                 
             elif message["type"] == "join_game":
                 session_id = message["session_id"]
@@ -1241,9 +1185,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                             )
                             db.add(participant)
                             db.commit()
-                            print(f"\n🎮 AUTO-JOINED via WebSocket:")
-                            print(f"   User: {user.username} (ID: {user.id})")
-                            print(f"   Session: {session_id}")
+                            
                         else:
                             await websocket.send_text(json.dumps({"type": "error", "message": "Not a group member"}))
                             continue
@@ -1387,46 +1329,6 @@ async def get_online_users_api(group_name: str, current_user: User = Depends(get
 
 ##### GAME API ENDPOINTS #####
 
-@app.post("/api/game/start/{session_id}")
-async def start_game_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Start the game (Host only)"""
-    try:
-        # Verify user is host of this session
-        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
-        if not session:
-            raise HTTPException(status_code=404, detail="Session nicht gefunden")
-        
-        if session.host_user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Nur der Host kann das Spiel starten")
-        
-        # Start the game
-        result = start_game(session_id)
-        
-        if "error" in result:
-            raise HTTPException(status_code=400, detail=result["error"])
-        
-        # Update session status
-        session.status = "in_progress"
-        db.commit()
-        
-        # Game state is already a dictionary from db_operations
-        game_state_dict = result["game_state"]
-        game_state_dict["flashcard_count"] = result["flashcard_count"]
-        
-        # Broadcast game start to all participants
-        await manager.broadcast_to_group(f"game_{session_id}", {
-            "type": "game_started",
-            "session_id": session_id,
-            "question": result["question"],
-            "game_state": game_state_dict
-        })
-        
-        return {"message": "Spiel gestartet", "question": result["question"], "game_state": game_state_dict}
-        
-    except Exception as e:
-        print(f"Error starting game: {e}")
-        raise HTTPException(status_code=500, detail="Fehler beim Starten des Spiels")
-
 
 @app.get("/api/game/state/{session_id}")
 async def get_game_state_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1461,9 +1363,7 @@ async def get_game_state_api(session_id: str, current_user: User = Depends(get_c
                 )
                 db.add(participant)
                 db.commit()
-                print(f"\n🎮 AUTO-JOINED via Game API:")
-                print(f"   User: {current_user.username} (ID: {current_user.id})")
-                print(f"   Session: {session_id}")
+            
             else:
                 raise HTTPException(status_code=403, detail="Sie sind kein Mitglied dieser Gruppe")
         
@@ -1483,12 +1383,7 @@ async def get_game_state_api(session_id: str, current_user: User = Depends(get_c
 @app.post("/api/game/vote")
 async def cast_vote_api(vote_data: VoteCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Cast or update vote"""
-    print(f"🎯 VOTE API DEBUG - Received vote request:")
-    print(f"  - Raw vote_data: {vote_data}")
-    print(f"  - session_id: {vote_data.session_id}")
-    print(f"  - flashcard_id: {vote_data.flashcard_id}")
-    print(f"  - answer_id: {vote_data.answer_id}")
-    print(f"  - user_id: {current_user.id}")
+    
     
     try:
         # Verify user is participant
@@ -1501,12 +1396,12 @@ async def cast_vote_api(vote_data: VoteCreate, current_user: User = Depends(get_
             print(f"❌ VOTE API DEBUG - User {current_user.id} is not participant of session {vote_data.session_id}")
             raise HTTPException(status_code=403, detail="Sie sind kein Teilnehmer dieser Session")
         
-        print(f"✅ VOTE API DEBUG - User is participant, casting vote...")
+       
         
         # Cast vote
         vote = cast_vote(vote_data.session_id, current_user.id, vote_data.flashcard_id, vote_data.answer_id)
         
-        print(f"✅ VOTE API DEBUG - Vote cast successfully: {vote}")
+      
         
         # Get updated votes for broadcast
         votes_data = get_question_votes(vote_data.session_id, vote_data.flashcard_id)
@@ -1701,43 +1596,6 @@ async def end_game_api(session_id: str, current_user: User = Depends(get_current
 
 @app.post("/api/game/chat")
 async def send_chat_message_api(message_data: ChatMessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Send chat message"""
-    try:
-        # Verify user is participant
-        participant = db.query(SessionParticipant).filter(
-            SessionParticipant.session_id == message_data.session_id,
-            SessionParticipant.user_id == current_user.id
-        ).first()
-        
-        if not participant:
-            raise HTTPException(status_code=403, detail="Sie sind kein Teilnehmer dieser Session")
-        
-        # Add message
-        chat_message = add_chat_message(message_data.session_id, current_user.id, message_data.message)
-        
-        # Broadcast to all participants in game
-        await manager.broadcast_to_group(f"game_{message_data.session_id}", {
-            "type": "chat_message",
-            "message": {
-                "id": chat_message.id,
-                "user_id": current_user.id,
-                "username": current_user.username,
-                "message": chat_message.message,
-                "sent_at": chat_message.sent_at.isoformat()
-            }
-        })
-        
-        return {"message": "Nachricht gesendet", "message_id": chat_message.id}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error sending chat message: {e}")
-        raise HTTPException(status_code=500, detail="Fehler beim Senden der Nachricht")
-
-
-@app.post("/api/game/chat/send")
-async def send_chat_message_api_alt(message_data: ChatMessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Send chat message"""
     try:
         # Verify user is participant

@@ -1,17 +1,10 @@
-import React from 'react'
-import deutschIcon from "./teamquizlogo.jpeg";
 import Link from '@mui/joy/Link';
-import List from '@mui/joy/List';
 import Button from  '@mui/joy/Button';
 import Box from '@mui/joy/Box';
 import IconButton from '@mui/joy/IconButton';
 import Drawer from '@mui/joy/Drawer';
-import { useState,useEffect } from 'react';
-import AccordionDetails from '@mui/joy/AccordionDetails';
-import AccordionSummary from '@mui/joy/AccordionSummary';
-import Accordion from '@mui/joy/Accordion';
+import React, { useState,useEffect } from 'react';
 import Logo from './logo.png';
-import AccordionGroup from '@mui/joy/AccordionGroup';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Badge from '@mui/joy/Badge';

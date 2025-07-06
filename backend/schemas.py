@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
             raise ValueError('Username must be at least 3 characters long')
         if not v.isalnum():
             raise ValueError('Username must contain only letters and numbers')
-        return v.lower()
+        return v
     
     @field_validator('password')
     def password_must_be_strong(cls, v):
@@ -160,9 +160,6 @@ class PendingInvitation(BaseModel):
         from_attributes = True
 
 
-class SessionStatusUpdate(BaseModel):
-    status: str
-
 
 # Game schemas
 class GameStateResponse(BaseModel):
@@ -227,22 +224,27 @@ class ChatMessageCreate(BaseModel):
     message: str
 
 
-class ChatMessageResponse(BaseModel):
-    id: int
-    user_id: int
-    username: str
-    message: str
-    sent_at: datetime
-    
-    class Config:
-        from_attributes = True
+class GruppenRequest(BaseModel):
+    gruppen_name:str
 
+class FachRequest(BaseModel):
+    fach_name:str
+    gruppen_name:str
 
-class GameResult(BaseModel):
-    session_id: str
-    total_score: int
-    max_possible_score: int
-    percentage: float
-    status: str  # "won" or "lost"
-    questions_answered: int
-    total_questions: int
+class FachRenameRequest(BaseModel):
+    old_fach_name: str
+    new_fach_name: str
+    gruppen_name: str
+
+class FachDeleteRequest(BaseModel):
+    fach_name: str
+    gruppen_name: str
+
+class KarteiKarteRequest(BaseModel):
+    Fach:str
+    Gruppe:str
+    Frage:str
+    Antwort1:str
+    Antwort2:str
+    Antwort3:str
+    Antwort4:str
