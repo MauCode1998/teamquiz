@@ -98,13 +98,9 @@ def start_servers():
         time.sleep(3)
         
         # Start frontend
-        frontend_process = start_frontend()
+        start_frontend()
         
-        print("\n✅ Both servers are running!")
-        print("📍 Backend:  http://localhost:8000")
-        print("📍 Frontend: http://localhost:3000")
-        print("\nPress Ctrl+C to stop both servers...\n")
-        
+      
         # Wait for Ctrl+C
         try:
             backend_process.wait()

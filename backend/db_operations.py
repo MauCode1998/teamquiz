@@ -701,15 +701,15 @@ def end_question(session_id: str) -> dict:
         votes_data = get_question_votes(session_id, flashcard.id)
         vote_counts = votes_data["vote_counts"]
         
-        # Determine winning answer (most votes)
+        
         if vote_counts:
             max_votes = max(vote_counts.values())
             answers_with_max_votes = [int(answer_id) for answer_id, count in vote_counts.items() if count == max_votes]
-            winning_answer_id = random.choice(answers_with_max_votes)  # Random if tie
+            winning_answer_id = random.choice(answers_with_max_votes) 
         else:
             winning_answer_id = None
             
-        # Check if team got it right
+   
         was_correct = winning_answer_id == correct_answer.id
         points_earned = 100 if was_correct else 0
         

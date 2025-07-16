@@ -25,12 +25,10 @@ async def create_lobby(
     subject_name = data.get("subject_name")
     group_name = data.get("group_name")
     
-    # Get subject - first find the group
     group = db.query(Group).filter(Group.name == group_name).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     
-    # Then find subject in that group
     subject = db.query(Subject).filter(
         Subject.name == subject_name,
         Subject.group_id == group.id
@@ -39,7 +37,6 @@ async def create_lobby(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     
-    # Create new session (multiple sessions per subject are allowed)
     session = QuizSession(
         subject_id=subject.id,
         group_id=subject.group_id,
@@ -50,7 +47,6 @@ async def create_lobby(
     db.add(session)
     db.commit()
     
-    # Add host as participant
     host_participant = SessionParticipant(
         session_id=session.id,
         user_id=current_user.id,
@@ -282,8 +278,7 @@ async def start_game(
         SessionParticipant.session_id == session_id
     ).all()
     
-    print(f"\n📋 PARTICIPANTS IN SESSION (from DB):")
-    print(f"   Total count: {len(all_participants)}")
+   
     
     for idx, participant in enumerate(all_participants):
         user = db.query(User).filter(User.id == participant.user_id).first()
@@ -310,10 +305,6 @@ async def start_game(
     session.status = "playing"
     db.commit()
     
-    # Note: We don't broadcast via WebSocket here because:
-    # 1. Lobby uses polling, not WebSocket
-    # 2. Participants will see status change to "playing" via polling
-    # 3. WebSocket connection is only established when entering the game
     
     print("\n💡 INFO: Lobby participants will be notified via polling")
     print("   They will see status change from 'waiting' to 'playing'")

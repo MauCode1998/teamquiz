@@ -1329,6 +1329,46 @@ async def get_online_users_api(group_name: str, current_user: User = Depends(get
 
 ##### GAME API ENDPOINTS #####
 
+@app.post("/api/game/start/{session_id}")
+async def start_game_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Start the game (Host only)"""
+    try:
+        # Verify user is host of this session
+        session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session nicht gefunden")
+        
+        if session.host_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Nur der Host kann das Spiel starten")
+        
+        # Start the game
+        result = start_game(session_id)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        # Update session status
+        session.status = "in_progress"
+        db.commit()
+        
+        # Game state is already a dictionary from db_operations
+        game_state_dict = result["game_state"]
+        game_state_dict["flashcard_count"] = result["flashcard_count"]
+        
+        # Broadcast game start to all participants
+        await manager.broadcast_to_group(f"game_{session_id}", {
+            "type": "game_started",
+            "session_id": session_id,
+            "question": result["question"],
+            "game_state": game_state_dict
+        })
+        
+        return {"message": "Spiel gestartet", "question": result["question"], "game_state": game_state_dict}
+        
+    except Exception as e:
+        print(f"Error starting game: {e}")
+        raise HTTPException(status_code=500, detail="Fehler beim Starten des Spiels")
+
 
 @app.get("/api/game/state/{session_id}")
 async def get_game_state_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

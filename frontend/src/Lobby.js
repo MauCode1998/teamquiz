@@ -238,7 +238,7 @@ function Lobby() {
                                     fontStyle: 'italic',
                                     fontSize: { xs: '0.9rem', sm: '1rem' }
                                 }}>
-                                    📤 Teilen Sie diesen Code mit anderen Spielern
+                                
                                 </Typography>
                             </>
                         )}
