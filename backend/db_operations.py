@@ -5,12 +5,10 @@ import random
 
 Base.metadata.create_all(bind=engine)
 
-##### BENUTZERAKTIONEN #####
 def create_user(username:str,password:str):
     db = SessionLocal()
     neuer_nutzer = User(username=username,password=password)
 
-    #username muss einzigartig sein
     if is_username_taken(username):
         return "Username wird schon verwendet"
 
@@ -95,7 +93,6 @@ def get_username_by_id(id):
 
 
 
-##### GRUPPENAKTIONEN #####
 def is_groupname_taken(groupname):
     db = SessionLocal()
 
@@ -151,7 +148,6 @@ def get_user_groups(username: str):
         db.close()
         return {"message": "Benutzer nicht gefunden", "groups": []}
     
-    # Liste von Gruppen als JSON-Format
     groups = [{"id": assoc.group.id, "name": assoc.group.name} for assoc in user.user_groups if assoc.group is not None]
 
     db.close()
@@ -187,7 +183,6 @@ def add_user_to_group(username:str,groupname:str):
     user_id = get_user_id(username)
     group_id = get_group_id(groupname)
 
-    #checken ob user existiert
     if not is_username_taken(username):
         db.close()
         return "User nicht gefunden"
@@ -216,7 +211,6 @@ def delete_user_from_group(username:str,groupname:str):
     user_id = get_user_id(username)
     group_id = get_group_id(groupname)
 
-    #checken ob user existiert
     if not is_username_taken(username):
         return "User nicht gefunden"
     if not is_groupname_taken(groupname):
@@ -282,7 +276,6 @@ def get_group(name):
         return "Gruppe wurde nicht gefunden"
     
 
-#### Subject Funktionen #####
 def add_subject_to_group(subjectname,groupname):
     db = SessionLocal()
     group_id = get_group_id(groupname)
@@ -339,7 +332,6 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
     try:
         print(f"DEBUG: Updating subject '{old_subjectname}' to '{new_subjectname}' in group_id {group_id}")
         
-        # Check if subject exists
         subject = db.query(Subject).filter(Subject.name == old_subjectname, Subject.group_id == group_id).first()
         if not subject:
             print(f"DEBUG: Subject '{old_subjectname}' not found in group {group_id}")
@@ -347,7 +339,6 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
         
         print(f"DEBUG: Found subject with current name: '{subject.name}', ID: {subject.id}")
         
-        # Check if new name already exists in group (excluding current subject)
         existing_subject = db.query(Subject).filter(
             Subject.name == new_subjectname, 
             Subject.group_id == group_id,
@@ -357,7 +348,6 @@ def update_subject_name(old_subjectname, new_subjectname, group_id):
             print(f"DEBUG: Subject with name '{new_subjectname}' already exists (ID: {existing_subject.id})")
             return "Ein Fach mit diesem Namen existiert bereits in der Gruppe"
         
-        # Update subject name - use merge to ensure proper update
         subject.name = new_subjectname
         db.merge(subject)  # Use merge instead of direct commit
         db.commit()
@@ -441,7 +431,6 @@ def add_answers_to_flashcard(karteikarten_id:int,antwortdict:dict):
 
 
 
-##### Karteikarten Funktionen #####
 def create_flashcard(subjectname:str,groupname:str,frage:str,antwortdict:dict):
     db = SessionLocal()
     try:
@@ -478,20 +467,16 @@ def update_flashcard(flashcard_id: int, frage: str, antwortdict: dict):
     db = SessionLocal()
     
     try:
-        # Flashcard abrufen
         flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
         
         if not flashcard:
             db.close()
             return f"Fehler: Flashcard mit ID {flashcard_id} wurde nicht gefunden."
         
-        # Update question
         flashcard.question = frage
         
-        # Delete existing answers
         db.query(Answer).filter(Answer.flashcard_id == flashcard_id).delete()
         
-        # Add new answers
         for answer_data in antwortdict:
             new_answer = Answer(
                 antwort=answer_data["text"],
@@ -512,7 +497,6 @@ def update_flashcard(flashcard_id: int, frage: str, antwortdict: dict):
 def delete_flashcard(flashcard_id: int):
     db = SessionLocal()
     try:
-        # Flashcard abrufen
         flashcard = db.query(Flashcard).filter(Flashcard.id == flashcard_id).first()
         
         if not flashcard:
@@ -531,7 +515,6 @@ def delete_flashcard(flashcard_id: int):
 
 
 
-##### GAME OPERATIONS #####
 
 def start_game(session_id: str) -> dict:
     """Start the game and prepare first question"""
@@ -539,7 +522,6 @@ def start_game(session_id: str) -> dict:
     try:
         game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
         if not game_state:
-            # Create new game state
             session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
             if not session:
                 return {"error": "Session nicht gefunden"}
@@ -556,14 +538,12 @@ def start_game(session_id: str) -> dict:
             db.commit()
             db.refresh(game_state)
             
-        # Get all flashcards for this session's subject
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         flashcards = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).all()
         
         if not flashcards:
             return {"error": "Keine Karteikarten gefunden"}
             
-        # Start with first flashcard
         first_flashcard = flashcards[0]
         game_state.status = "question_active"
         game_state.started_at = datetime.utcnow()
@@ -573,7 +553,6 @@ def start_game(session_id: str) -> dict:
         
         db.commit()
         
-        # Convert to dictionary before closing session
         game_state_dict = {
             "session_id": game_state.session_id,
             "current_question_index": game_state.current_question_index,
@@ -612,7 +591,6 @@ def cast_vote(session_id: str, user_id: int, flashcard_id: int, answer_id: int) 
     """Cast or update a user's vote for current question"""
     db = SessionLocal()
     try:
-        # Check if user already voted for this question
         existing_vote = db.query(Vote).filter(
             Vote.session_id == session_id,
             Vote.user_id == user_id,
@@ -620,14 +598,12 @@ def cast_vote(session_id: str, user_id: int, flashcard_id: int, answer_id: int) 
         ).first()
         
         if existing_vote:
-            # Update existing vote
             existing_vote.answer_id = answer_id
             existing_vote.voted_at = datetime.utcnow()
             db.commit()
             vote_id = existing_vote.id
             return vote_id
         else:
-            # Create new vote
             vote = Vote(
                 session_id=session_id,
                 user_id=user_id,
@@ -652,17 +628,14 @@ def get_question_votes(session_id: str, flashcard_id: int) -> dict:
             Vote.flashcard_id == flashcard_id
         ).all()
         
-        # Count votes per answer
         vote_counts = {}
         vote_details = []
         
         for vote in votes:
-            # Count votes
             if str(vote.answer_id) not in vote_counts:
                 vote_counts[str(vote.answer_id)] = 0
             vote_counts[str(vote.answer_id)] += 1
             
-            # Vote details with username
             user = db.query(User).filter(User.id == vote.user_id).first()
             vote_details.append({
                 "user_id": vote.user_id,
@@ -692,12 +665,10 @@ def end_question(session_id: str) -> dict:
         if not flashcard:
             return {"error": "Karteikarte nicht gefunden"}
             
-        # Get correct answer
         correct_answer = next((answer for answer in flashcard.answers if answer.is_correct), None)
         if not correct_answer:
             return {"error": "Keine richtige Antwort gefunden"}
             
-        # Get votes for this question
         votes_data = get_question_votes(session_id, flashcard.id)
         vote_counts = votes_data["vote_counts"]
         
@@ -713,7 +684,6 @@ def end_question(session_id: str) -> dict:
         was_correct = winning_answer_id == correct_answer.id
         points_earned = 100 if was_correct else 0
         
-        # Update score
         game_state.total_score += points_earned
         game_state.status = "question_ended"
         db.commit()
@@ -738,17 +708,13 @@ def next_question(session_id: str) -> dict:
         game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         
-        # Get all flashcards
         flashcards = db.query(Flashcard).filter(Flashcard.subject_id == session.subject_id).all()
         total_questions = len(flashcards)
         
-        # Check if game should end
         next_index = game_state.current_question_index + 1
         
-        # Simple logic: Only end when all questions are answered
         
         if next_index >= total_questions:
-            # All questions answered
             percentage = (game_state.total_score / game_state.max_possible_score) * 100
             status = "won" if percentage >= 90 else "lost"
             game_state.status = "game_finished"
@@ -768,7 +734,6 @@ def next_question(session_id: str) -> dict:
                 }
             }
         else:
-            # Continue to next question
             next_flashcard = flashcards[next_index]
             game_state.current_question_index = next_index
             game_state.current_flashcard_id = next_flashcard.id
@@ -806,7 +771,6 @@ def get_game_state(session_id: str) -> dict:
             "flashcard_count": flashcard_count
         }
         
-        # If there's a current flashcard, include the question and answers
         if game_state.current_flashcard_id:
             flashcard = db.query(Flashcard).filter(Flashcard.id == game_state.current_flashcard_id).first()
             if flashcard:
@@ -820,15 +784,12 @@ def get_game_state(session_id: str) -> dict:
                         {
                             "id": answer.id,
                             "text": answer.antwort
-                            # Don't reveal correct answer unless question is ended
                         }
                         for answer in answers
                     ]
                 }
                 
-                # If question is ended, include the result
                 if game_state.status == 'question_ended':
-                    # Get question result
                     correct_answers = [a for a in answers if a.is_correct]
                     votes = db.query(Vote).filter(
                         Vote.session_id == session_id,
@@ -907,16 +868,13 @@ def calculate_final_result(session_id: str):
         if not game_state:
             return None
         
-        # Use correct field names
         final_score = game_state.total_score  # was game_state.current_score
         questions_correct = final_score // 100  # 100 points per correct
         
-        # Get total questions from max_possible_score (already calculated correctly)
         max_possible_score = game_state.max_possible_score  # was total_questions * 100
         total_questions = max_possible_score // 100  # Calculate from max_possible_score
         target_score = int(max_possible_score * 0.9)
         
-        # Victory if reached 90% target
         victory = final_score >= target_score
         
         return {
@@ -936,17 +894,6 @@ def calculate_final_result(session_id: str):
 
 
 if __name__ == '__main__':
-    #print(add_subject_to_group("OOP mit deiner Mum","Bango"))
-    #create_flashcard("OOP mit deiner Mum","Bango","Wer ist cool?",[{"text":"deine mum","is_correct":True}])
-    #print(add_answers_to_flashcard("1",[{"text":"Kissen rocken","is_correct":False},{"text":"Kissen pocken","is_correct":False},{"text":"Kissen mocken","is_correct":True}]))
-    #print([user.username for user in get_users()])
-    #print(create_invitation("Hongfa","Mau","Bango"))
-    #print(get_invitations("Hongfa"))
-    #print(get_group_name(1))
-    #create_invitation("Hongfa","Mau","OOP mit Java")
     add_user_to_group("Hongfa","blabubb")
     
-    #print(get_group("Bango"))
-    #create_flashcard("")
-    #print(get_subject_cards("H","Lach"))
     pass

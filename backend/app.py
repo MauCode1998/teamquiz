@@ -65,7 +65,6 @@ from lobby_routes import router as lobby_router
 
 app = FastAPI()
 
-# Create all database tables (especially important for test database)
 Base.metadata.create_all(bind=engine)
 
 if os.path.exists("../frontend/build/static"):
@@ -82,7 +81,6 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# Include lobby router
 app.include_router(lobby_router)
 
 
@@ -93,7 +91,6 @@ def cleanup_old_sessions():
     
     db = SessionLocal()
     try:
-        # Delete all related data first (foreign key constraints)
         db.query(Vote).delete()
         db.query(ChatMessage).delete()
         db.query(GameState).delete()
@@ -121,7 +118,6 @@ async def validation_exception_handler(request, exc):
 @app.post("/register", response_model=Token)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
-    # Check if user already exists
     existing_user = db.query(User).filter(
         (User.username.ilike(user_data.username)) | (User.email == user_data.email)
     ).first()
@@ -138,7 +134,6 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
     
-    # Create new user
     hashed_password = hash_password(user_data.password)
     new_user = User(
         username=user_data.username,
@@ -152,11 +147,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    # Create tokens
     access_token = create_access_token(data={"sub": new_user.username})
     refresh_token_str, expires_at = create_refresh_token()
     
-    # Save refresh token
     refresh_token = RefreshToken(
         token=refresh_token_str,
         user_id=new_user.id,
@@ -189,11 +182,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Inactive user"
         )
     
-    # Create tokens
     access_token = create_access_token(data={"sub": user.username})
     refresh_token_str, expires_at = create_refresh_token()
     
-    # Save refresh token
     refresh_token = RefreshToken(
         token=refresh_token_str,
         user_id=user.id,
@@ -219,7 +210,6 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
             detail="Invalid refresh token"
         )
     
-    # Create new access token
     access_token = create_access_token(data={"sub": user.username})
     
     return {
@@ -231,7 +221,6 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
 @app.post("/logout")
 async def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Logout and invalidate tokens"""
-    # Delete all refresh tokens for this user
     db.query(RefreshToken).filter(RefreshToken.user_id == current_user.id).delete()
     db.commit()
     
@@ -254,7 +243,6 @@ async def create_new_group(gruppenrequest: GruppenRequest, current_user: User = 
     return {"message":"Success!","content":"Gruppe erfolgreich angelegt"}
 
 
-# REMOVED: Old flashcard endpoint - use /flashcard/create instead
 
 
 @app.post("/flashcard/create")
@@ -264,7 +252,6 @@ async def create_flashcard_new(flashcard_data: FlashcardCreate, current_user: Us
     print(f"Subject: {flashcard_data.fach}, Group: {flashcard_data.gruppe}")
     print(f"Answers: {flashcard_data.antworten}")
     
-    # Check if user is member of the group
     is_member = is_user_in_group(current_user.username, flashcard_data.gruppe)
     if not is_member:
         raise HTTPException(
@@ -272,13 +259,11 @@ async def create_flashcard_new(flashcard_data: FlashcardCreate, current_user: Us
             detail="You are not a member of this group"
         )
     
-    # Transform answers to match database format
     antworten_for_db = [
         {"text": answer["text"], "is_correct": answer["is_correct"]}
         for answer in flashcard_data.antworten
     ]
     
-    # Create flashcard
     neue_karteikarte = create_flashcard(
         subjectname=flashcard_data.fach,
         groupname=flashcard_data.gruppe,
@@ -318,7 +303,6 @@ async def rename_fach(rename_request: FachRenameRequest, current_user: User = De
     print(f"Fach umbenennen: {rename_request.old_fach_name} -> {rename_request.new_fach_name}")
     username = current_user.username
     
-    # Get group ID
     group_id = get_group_id(rename_request.gruppen_name)
     if not group_id:
         raise HTTPException(
@@ -326,14 +310,12 @@ async def rename_fach(rename_request: FachRenameRequest, current_user: User = De
             detail=f"Gruppe '{rename_request.gruppen_name}' nicht gefunden"
         )
     
-    # Check if user is in group
     if not is_user_in_group(username, rename_request.gruppen_name):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sie sind nicht berechtigt, Fächer in dieser Gruppe zu bearbeiten"
         )
     
-    # Validate input
     if not rename_request.new_fach_name.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -367,7 +349,6 @@ async def delete_fach(delete_request: FachDeleteRequest, current_user: User = De
     print(f"Fach löschen: {delete_request.fach_name} aus Gruppe {delete_request.gruppen_name}")
     username = current_user.username
     
-    # Get group ID
     group_id = get_group_id(delete_request.gruppen_name)
     if not group_id:
         raise HTTPException(
@@ -375,7 +356,6 @@ async def delete_fach(delete_request: FachDeleteRequest, current_user: User = De
             detail=f"Gruppe '{delete_request.gruppen_name}' nicht gefunden"
         )
     
-    # Check if user is in group
     if not is_user_in_group(username, delete_request.gruppen_name):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -404,7 +384,6 @@ async def delete_group_route(gruppenrequest: GruppenRequest, current_user: User 
     print("gruppe wird gelöscht!")
     print(gruppenrequest)
     username = current_user.username
-    ##achtung! es muss hier eigentlihc noch geguckt werden ob der user teil der gruppe ist###
 
     is_member = is_user_in_group(username,gruppenrequest.gruppen_name)
     if is_member:
@@ -423,7 +402,6 @@ async def leave_group_route(gruppenrequest: GruppenRequest, current_user: User =
     is_member = is_user_in_group(username,gruppenrequest.gruppen_name)
     if is_member:
 
-        #gucken, ob user der letzte member ist
       
      
         if len(get_group(gruppenrequest.gruppen_name)["users"]) == 1:
@@ -450,7 +428,6 @@ async def leave_group_route(gruppenrequest: GruppenRequest, current_user: User =
 async def get_gruppen_specifics(name: str, current_user: User = Depends(get_current_user)):
     user = current_user.username
     print(user)
-    #halfassed login überprüfung lol
     gruppen_info = get_group(name)
     print(gruppen_info)
     return {"message":"Success","content":gruppen_info}
@@ -501,7 +478,6 @@ async def send_invitation_route(invitation_request: InvitationRequest, current_u
     to_username = invitation_request.username
     groupname = invitation_request.gruppen_name
     
-    # Check if sender is member of the group
     is_member = is_user_in_group(from_username, groupname)
     if not is_member:
         raise HTTPException(
@@ -509,7 +485,6 @@ async def send_invitation_route(invitation_request: InvitationRequest, current_u
             detail="You are not a member of this group"
         )
     
-    # Check if target user exists
     db = next(get_db())
     target_user = db.query(User).filter(User.username == to_username).first()
     if not target_user:
@@ -518,7 +493,6 @@ async def send_invitation_route(invitation_request: InvitationRequest, current_u
             detail="User not found"
         )
     
-    # Check if user is already in the group
     if is_user_in_group(to_username, groupname):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -545,7 +519,6 @@ async def accept_invitation_route(invitation_action: InvitationActionRequest, cu
     
     username = current_user.username
     
-    # Get invitation details
     invitations = get_invitations(username)
     invitation = None
     for inv in invitations:
@@ -559,10 +532,8 @@ async def accept_invitation_route(invitation_action: InvitationActionRequest, cu
             detail="Invitation not found"
         )
     
-    # Add user to group
     try:
         add_user_to_group(username, invitation['To'])
-        # Delete the invitation
         delete_invitation(invitation_action.invitation_id)
         return {"message": "success", "content": "User added to group"}
     except Exception as e:
@@ -579,7 +550,6 @@ async def reject_invitation_route(invitation_action: InvitationActionRequest, cu
     
     username = current_user.username
     
-    # Get invitation details
     invitations = get_invitations(username)
     invitation = None
     for inv in invitations:
@@ -593,7 +563,6 @@ async def reject_invitation_route(invitation_action: InvitationActionRequest, cu
             detail="Invitation not found"
         )
     
-    # Delete the invitation
     try:
         delete_invitation(invitation_action.invitation_id)
         return {"message": "success", "content": "Invitation rejected"}
@@ -611,13 +580,11 @@ async def update_flashcard_endpoint(flashcard_data: FlashcardUpdate, current_use
     print(f"New question: {flashcard_data.frage}")
     print(f"New answers: {flashcard_data.antworten}")
     
-    # Convert answers to format expected by db_operations
     antworten_for_db = [
         {"text": answer["text"], "is_correct": answer["is_correct"]}
         for answer in flashcard_data.antworten
     ]
     
-    # Update flashcard
     result = update_flashcard(
         flashcard_id=flashcard_data.flashcard_id,
         frage=flashcard_data.frage,
@@ -637,7 +604,6 @@ async def delete_flashcard_endpoint(flashcard_data: FlashcardDelete, current_use
     """Delete an existing flashcard"""
     print(f"Deleting flashcard ID: {flashcard_data.flashcard_id}")
     
-    # Delete flashcard
     result = delete_flashcard(flashcard_data.flashcard_id)
     
     if "gelöscht" in result:
@@ -649,11 +615,8 @@ async def delete_flashcard_endpoint(flashcard_data: FlashcardDelete, current_use
         )
     
     
-# Old login endpoint removed - using JWT /login endpoint instead
 
-# Old token function removed - using JWT authentication instead
 
-# ========== LOBBY/SESSION ENDPOINTS ==========
 
 def generate_join_code():
     """Generate a unique 6-character join code"""
@@ -667,7 +630,6 @@ async def create_session(
     db: Session = Depends(get_db)
 ):
     """Create a new quiz session"""
-    # Find subject and group
     subject = db.query(Subject).filter(
         Subject.name == session_data.subject_name,
         Subject.group.has(name=session_data.group_name)
@@ -679,7 +641,6 @@ async def create_session(
             detail="Subject not found in specified group"
         )
     
-    # Generate unique join code
     join_code = None
     while True:
         join_code = generate_join_code()
@@ -687,7 +648,6 @@ async def create_session(
         if not existing:
             break
     
-    # Create session
     session = QuizSession(
         subject_id=subject.id,
         group_id=subject.group_id,
@@ -698,14 +658,10 @@ async def create_session(
     db.add(session)
     db.commit()
     
-    # NOTE: Participants are now tracked via WebSocket groups only (simplified approach)
     
-    # CRITICAL FIX: Pre-add host to WebSocket group even WITHOUT active connection
-    # This ensures they receive updates when participants join before their WebSocket connects
     manager.join_group(current_user.id, f"lobby_{session.id}")
     print(f"🔥 CRITICAL FIX: Pre-added host {current_user.username} (ID: {current_user.id}) to lobby_{session.id} group (even without WebSocket)")
     
-    # Broadcast initial lobby update (for when others join later)
     participants = [{
         "user_id": current_user.id,
         "username": current_user.username,
@@ -719,7 +675,6 @@ async def create_session(
         "status": session.status
     })
     
-    # Return response
     return SessionResponse(
         session_id=session.id,
         join_code=join_code,
@@ -742,15 +697,12 @@ async def get_session_details(
             detail="Session not found"
         )
     
-    # Get flashcard count for the subject
     flashcard_count = db.query(Flashcard).filter(
         Flashcard.subject_id == session.subject_id
     ).count()
     
-    # Get participants from database
     participant_list = []
     
-    # Add host first
     host_user = db.query(User).filter(User.id == session.host_user_id).first()
     if host_user:
         participant_list.append({
@@ -759,7 +711,6 @@ async def get_session_details(
             "is_host": True
         })
     
-    # Add all participants from DB
     session_participants = db.query(SessionParticipant).filter(
         SessionParticipant.session_id == session_id
     ).all()
@@ -773,12 +724,10 @@ async def get_session_details(
                 "is_host": False
             })
     
-    # Get related objects explicitly
     subject = db.query(Subject).filter(Subject.id == session.subject_id).first()
     group = db.query(Group).filter(Group.id == session.group_id).first()
     host = db.query(User).filter(User.id == session.host_user_id).first()
     
-    # Build response using dict instead of Pydantic objects directly
     return {
         "id": session.id,
         "subject": {"id": subject.id, "name": subject.name},
@@ -809,11 +758,7 @@ async def join_session(
             detail="Invalid join code"
         )
     
-    # NOTE: Participants are now tracked via WebSocket groups
-    # The actual join happens when WebSocket sends join_lobby message
-    # This endpoint just returns success to let frontend proceed
     
-    # Return minimal response - actual participant list comes from WebSocket
     return {"message": "Ready to join", "session_id": session.id}
 
 
@@ -824,7 +769,6 @@ async def send_invitation(
     db: Session = Depends(get_db)
 ):
     """Send invitation to another user"""
-    # Verify session exists and user is host
     session = db.query(QuizSession).filter(QuizSession.id == invitation_data.session_id).first()
     
     if not session:
@@ -833,7 +777,6 @@ async def send_invitation(
             detail="Session not found"
         )
     
-    # Find invitee
     invitee = db.query(User).filter(User.username == invitation_data.invitee_username).first()
     
     if not invitee:
@@ -842,7 +785,6 @@ async def send_invitation(
             detail="User not found"
         )
     
-    # Check if invitee is already in session
     existing_participant = db.query(SessionParticipant).filter(
         SessionParticipant.session_id == session.id,
         SessionParticipant.user_id == invitee.id
@@ -854,7 +796,6 @@ async def send_invitation(
             detail="User already in lobby"
         )
     
-    # Check if invitation already sent
     existing_invitation = db.query(LobbyInvitation).filter(
         LobbyInvitation.session_id == session.id,
         LobbyInvitation.invitee_id == invitee.id,
@@ -867,14 +808,12 @@ async def send_invitation(
             detail="Invitation already sent"
         )
     
-    # Prevent self-invitation
     if invitee.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Selbst-Einladung nicht erlaubt"
         )
     
-    # Create invitation
     invitation = LobbyInvitation(
         session_id=session.id,
         inviter_id=current_user.id,
@@ -884,7 +823,6 @@ async def send_invitation(
     db.add(invitation)
     db.commit()
     
-    # Send WebSocket notification to invitee
     invitation_data = {
         "invitation_id": invitation.id,
         "session_id": session.id,
@@ -913,13 +851,14 @@ async def get_pending_invitations(
     
     result = []
     for inv in invitations:
-        result.append(PendingInvitation(
-            invitation_id=inv.id,
-            session_id=inv.session_id,
-            inviter=inv.inviter.username,
-            subject=inv.session.subject.name,
-            created_at=inv.created_at
-        ))
+        if inv.session and inv.session.subject:
+            result.append(PendingInvitation(
+                invitation_id=inv.id,
+                session_id=inv.session_id,
+                inviter=inv.inviter.username,
+                subject=inv.session.subject.name,
+                created_at=inv.created_at
+            ))
     
     return result
 
@@ -942,12 +881,9 @@ async def accept_invitation(
             detail="Invitation not found"
         )
     
-    # Update invitation status
     invitation.status = "accepted"
     db.commit()
     
-    # Note: User will be automatically added as participant when they visit the lobby URL
-    # due to the auto-join feature in lobby_routes.py
     
     return {
         "session_id": invitation.session_id,
@@ -973,7 +909,6 @@ async def reject_invitation(
             detail="Invitation not found"
         )
     
-    # Update invitation status
     invitation.status = "rejected"
     db.commit()
     
@@ -989,7 +924,6 @@ async def leave_session(
     db: Session = Depends(get_db)
 ):
     """Leave a session"""
-    # Find participant record
     participant = db.query(SessionParticipant).filter(
         SessionParticipant.session_id == session_id,
         SessionParticipant.user_id == current_user.id
@@ -1003,28 +937,22 @@ async def leave_session(
     
     session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
     
-    # Remove participant
     db.delete(participant)
     
-    # If host leaves, transfer host or delete session
     if participant.is_host:
-        # Find next participant to become host
         next_participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id,
             SessionParticipant.user_id != current_user.id
         ).order_by(SessionParticipant.joined_at).first()
         
         if next_participant:
-            # Transfer host
             next_participant.is_host = True
             session.host_user_id = next_participant.user_id
         else:
-            # No other participants, delete session
             db.delete(session)
     
     db.commit()
     
-    # Broadcast to remaining participants
     if session:
         await manager.broadcast_to_group(f"lobby_{session_id}", {
             "type": "participant_left",
@@ -1035,34 +963,28 @@ async def leave_session(
     return {"message": "Left session"}
 
 
-# ========== WEBSOCKET ENDPOINTS ==========
 
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
     """WebSocket endpoint for real-time online user tracking"""
     db = next(get_db())
     
-    # Verify token and get user
     user = verify_token_websocket(token, db)
     if not user:
         await websocket.close(code=1008)  # Close with "Policy Violation" code
         return
     
-    # Connect user
     await manager.connect(websocket, user.id, user.username)
     
     try:
         while True:
-            # Receive messages from client
             data = await websocket.receive_text()
             message = json.loads(data)
             
-            # Handle different message types
             if message["type"] == "join_group":
                 group_name = message["group_name"]
                 manager.join_group(user.id, group_name)
                 
-                # Broadcast updated user list to all users in group
                 online_users = manager.get_online_users_in_group(group_name)
                 await manager.broadcast_to_group(group_name, {
                     "type": "online_users_update",
@@ -1074,7 +996,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 group_name = message["group_name"]
                 manager.leave_group(user.id, group_name)
                 
-                # Broadcast updated user list to all users in group
                 online_users = manager.get_online_users_in_group(group_name)
                 await manager.broadcast_to_group(group_name, {
                     "type": "online_users_update", 
@@ -1091,14 +1012,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     await websocket.send_text(json.dumps({"type": "error", "message": "Session not found"}))
                     continue
                 
-                # Add user to session participants in DB if not already there
                 existing_participant = db.query(SessionParticipant).filter(
                     SessionParticipant.session_id == session_id,
                     SessionParticipant.user_id == user.id
                 ).first()
                 
                 if not existing_participant and user.id != session.host_user_id:
-                    # Add as participant
                     new_participant = SessionParticipant(
                         session_id=session_id,
                         user_id=user.id,
@@ -1108,14 +1027,11 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     db.commit()
                     print(f"🔥 DEBUG: Added {user.username} to session participants in DB")
                 
-                # Join WebSocket group for broadcasting
                 manager.join_group(user.id, f"lobby_{session_id}")
                 print(f"🔥 DEBUG: After join_group - Lobby groups: {manager.group_users}")
                 
-                # Get all participants from DB (more reliable than WebSocket groups)
                 participants = []
                 
-                # Add host
                 host_user = db.query(User).filter(User.id == session.host_user_id).first()
                 if host_user:
                     participants.append({
@@ -1124,7 +1040,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         "is_host": True
                     })
                 
-                # Add all participants from DB
                 session_participants = db.query(SessionParticipant).filter(
                     SessionParticipant.session_id == session_id
                 ).all()
@@ -1140,7 +1055,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 
                 print(f"🔥 DEBUG: Broadcasting lobby_update with {len(participants)} participants")
                 
-                # Broadcast lobby update to all users in lobby
                 await manager.broadcast_to_group(f"lobby_{session_id}", {
                     "type": "lobby_update",
                     "session_id": session_id,
@@ -1159,14 +1073,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     await websocket.send_text(json.dumps({"type": "error", "message": "Session not found"}))
                     continue
                 
-                # Verify user is participant (with auto-join)
                 participant = db.query(SessionParticipant).filter(
                     SessionParticipant.session_id == session_id,
                     SessionParticipant.user_id == user.id
                 ).first()
                 
                 if not participant:
-                    # Auto-join if user is member of the group
                     session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
                     if session:
                         from models import UserGroupAssociation
@@ -1176,7 +1088,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         ).first()
                         
                         if is_group_member:
-                            # Auto-join the session
                             participant = SessionParticipant(
                                 session_id=session_id,
                                 user_id=user.id,
@@ -1193,15 +1104,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         await websocket.send_text(json.dumps({"type": "error", "message": "Session not found"}))
                         continue
                 
-                # Leave lobby group if user was there
                 manager.leave_group(user.id, f"lobby_{session_id}")
                 print(f"🔥 DEBUG: User {user.username} left lobby_{session_id}")
                 
-                # Join WebSocket group for game
                 manager.join_group(user.id, f"game_{session_id}")
                 print(f"🔥 DEBUG: User {user.username} joined game_{session_id}")
                 
-                # Send confirmation
                 await websocket.send_text(json.dumps({
                     "type": "game_joined",
                     "session_id": session_id
@@ -1215,7 +1123,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 if not session:
                     continue
                 
-                # Remove from DB participants if not host
                 if user.id != session.host_user_id:
                     db.query(SessionParticipant).filter(
                         SessionParticipant.session_id == session_id,
@@ -1224,13 +1131,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     db.commit()
                     print(f"🔥 DEBUG: Removed {user.username} from session participants in DB")
                 
-                # Leave WebSocket group
                 manager.leave_group(user.id, f"lobby_{session_id}")
                 
-                # Get updated participants from DB
                 participants = []
                 
-                # Add host
                 host_user = db.query(User).filter(User.id == session.host_user_id).first()
                 if host_user:
                     participants.append({
@@ -1239,7 +1143,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         "is_host": True
                     })
                 
-                # Add all remaining participants from DB
                 session_participants = db.query(SessionParticipant).filter(
                     SessionParticipant.session_id == session_id
                 ).all()
@@ -1255,7 +1158,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 
                 print(f"🔥 DEBUG: Broadcasting lobby_update with {len(participants)} participants after leave")
                 
-                # Broadcast lobby update to all users in lobby
                 await manager.broadcast_to_group(f"lobby_{session_id}", {
                     "type": "lobby_update",
                     "session_id": session_id,
@@ -1266,14 +1168,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     except WebSocketDisconnect:
         print(f"🔥 DEBUG: WebSocket disconnect for {user.username}")
         
-        # Check if user was in any lobby and remove them from DB
         for group_name in list(manager.group_users.keys()):
             if group_name.startswith("lobby_") and user.id in manager.group_users.get(group_name, []):
                 session_id = group_name.replace("lobby_", "")
                 session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
                 
                 if session and user.id != session.host_user_id:
-                    # Remove from DB
                     db.query(SessionParticipant).filter(
                         SessionParticipant.session_id == session_id,
                         SessionParticipant.user_id == user.id
@@ -1281,10 +1181,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     db.commit()
                     print(f"🔥 DEBUG: Removed {user.username} from session {session_id} on disconnect")
                     
-                    # Get updated participants
                     participants = []
                     
-                    # Add host
                     host_user = db.query(User).filter(User.id == session.host_user_id).first()
                     if host_user:
                         participants.append({
@@ -1293,7 +1191,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                             "is_host": True
                         })
                     
-                    # Add remaining participants
                     session_participants = db.query(SessionParticipant).filter(
                         SessionParticipant.session_id == session_id
                     ).all()
@@ -1307,7 +1204,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                                 "is_host": False
                             })
                     
-                    # Broadcast update before disconnecting
                     await manager.broadcast_to_group(f"lobby_{session_id}", {
                         "type": "lobby_update",
                         "session_id": session_id,
@@ -1327,13 +1223,11 @@ async def get_online_users_api(group_name: str, current_user: User = Depends(get
     return {"online_users": online_users}
 
 
-##### GAME API ENDPOINTS #####
 
 @app.post("/api/game/start/{session_id}")
 async def start_game_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Start the game (Host only)"""
     try:
-        # Verify user is host of this session
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session nicht gefunden")
@@ -1341,21 +1235,17 @@ async def start_game_api(session_id: str, current_user: User = Depends(get_curre
         if session.host_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Nur der Host kann das Spiel starten")
         
-        # Start the game
         result = start_game(session_id)
         
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
         
-        # Update session status
         session.status = "in_progress"
         db.commit()
         
-        # Game state is already a dictionary from db_operations
         game_state_dict = result["game_state"]
         game_state_dict["flashcard_count"] = result["flashcard_count"]
         
-        # Broadcast game start to all participants
         await manager.broadcast_to_group(f"game_{session_id}", {
             "type": "game_started",
             "session_id": session_id,
@@ -1374,19 +1264,16 @@ async def start_game_api(session_id: str, current_user: User = Depends(get_curre
 async def get_game_state_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current game state"""
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id,
             SessionParticipant.user_id == current_user.id
         ).first()
         
         if not participant:
-            # Auto-add user as participant if they're a member of the group
             session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
             if not session:
                 raise HTTPException(status_code=404, detail="Session nicht gefunden")
             
-            # Check if user is member of the group
             from models import UserGroupAssociation
             is_group_member = db.query(UserGroupAssociation).filter(
                 UserGroupAssociation.user_id == current_user.id,
@@ -1394,7 +1281,6 @@ async def get_game_state_api(session_id: str, current_user: User = Depends(get_c
             ).first()
             
             if is_group_member:
-                # Auto-join the session
                 participant = SessionParticipant(
                     session_id=session_id,
                     user_id=current_user.id,
@@ -1426,7 +1312,6 @@ async def cast_vote_api(vote_data: VoteCreate, current_user: User = Depends(get_
     
     
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == vote_data.session_id,
             SessionParticipant.user_id == current_user.id
@@ -1438,15 +1323,12 @@ async def cast_vote_api(vote_data: VoteCreate, current_user: User = Depends(get_
         
        
         
-        # Cast vote
         vote = cast_vote(vote_data.session_id, current_user.id, vote_data.flashcard_id, vote_data.answer_id)
         
       
         
-        # Get updated votes for broadcast
         votes_data = get_question_votes(vote_data.session_id, vote_data.flashcard_id)
         
-        # Broadcast vote update to all participants
         await manager.broadcast_to_group(f"game_{vote_data.session_id}", {
             "type": "vote_update",
             "flashcard_id": vote_data.flashcard_id,
@@ -1469,7 +1351,6 @@ async def cast_vote_api(vote_data: VoteCreate, current_user: User = Depends(get_
 async def get_votes_api(session_id: str, flashcard_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get votes for current question"""
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id,
             SessionParticipant.user_id == current_user.id
@@ -1492,7 +1373,6 @@ async def get_votes_api(session_id: str, flashcard_id: int, current_user: User =
 async def end_question_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """End current question and show results (Host only)"""
     try:
-        # Verify user is host
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session nicht gefunden")
@@ -1500,13 +1380,11 @@ async def end_question_api(session_id: str, current_user: User = Depends(get_cur
         if session.host_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Nur der Host kann das Voting beenden")
         
-        # End current question and calculate results
         result = end_question(session_id)
         
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
         
-        # Broadcast question result to all participants
         await manager.broadcast_to_group(f"game_{session_id}", {
             "type": "question_ended",
             "result": result
@@ -1525,7 +1403,6 @@ async def end_question_api(session_id: str, current_user: User = Depends(get_cur
 async def next_question_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """End current question and move to next (Host only)"""
     try:
-        # Verify user is host
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session nicht gefunden")
@@ -1533,38 +1410,31 @@ async def next_question_api(session_id: str, current_user: User = Depends(get_cu
         if session.host_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Nur der Host kann zur nächsten Frage wechseln")
         
-        # Check if current question is already ended  
         current_state = get_game_state(session_id)
         
         if current_state and current_state.get("status") == "question_active":
-            # Question not ended yet - must end it first
             question_result = end_question(session_id)
             if "error" in question_result:
                 raise HTTPException(status_code=400, detail=question_result["error"])
             
-            # Broadcast question result
             await manager.broadcast_to_group(f"game_{session_id}", {
                 "type": "question_ended",
                 "result": question_result
             })
         
-        # Move to next question (without ending again)
         next_result = next_question(session_id)
         
         if next_result["game_finished"]:
-            # Game is finished
             await manager.broadcast_to_group(f"game_{session_id}", {
                 "type": "game_finished",
                 "result": next_result["result"]
             })
             
-            # Update session status
             session.status = "finished"
             db.commit()
             
             return {"game_finished": True, "result": next_result["result"]}
         else:
-            # Continue with next question
             await manager.broadcast_to_group(f"game_{session_id}", {
                 "type": "new_question",
                 "question": next_result["question"]
@@ -1583,7 +1453,6 @@ async def next_question_api(session_id: str, current_user: User = Depends(get_cu
 async def end_game_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """End the game manually (Host only)"""
     try:
-        # Verify user is host
         session = db.query(QuizSession).filter(QuizSession.id == session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session nicht gefunden")
@@ -1591,7 +1460,6 @@ async def end_game_api(session_id: str, current_user: User = Depends(get_current
         if session.host_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Nur der Host kann das Spiel beenden")
         
-        # Update game state and session
         from models import GameState
         game_state = db.query(GameState).filter(GameState.session_id == session_id).first()
         if game_state:
@@ -1601,7 +1469,6 @@ async def end_game_api(session_id: str, current_user: User = Depends(get_current
         session.status = "finished"
         db.commit()
         
-        # Calculate final result
         if game_state:
             percentage = (game_state.total_score / game_state.max_possible_score) * 100 if game_state.max_possible_score > 0 else 0
             result = {
@@ -1619,7 +1486,6 @@ async def end_game_api(session_id: str, current_user: User = Depends(get_current
                 "status": "ended_manually"
             }
         
-        # Broadcast game end to the game group (not lobby!)
         await manager.broadcast_to_group(f"game_{session_id}", {
             "type": "game_finished",
             "result": result
@@ -1638,7 +1504,6 @@ async def end_game_api(session_id: str, current_user: User = Depends(get_current
 async def send_chat_message_api(message_data: ChatMessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Send chat message"""
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == message_data.session_id,
             SessionParticipant.user_id == current_user.id
@@ -1647,10 +1512,8 @@ async def send_chat_message_api(message_data: ChatMessageCreate, current_user: U
         if not participant:
             raise HTTPException(status_code=403, detail="Sie sind kein Teilnehmer dieser Session")
         
-        # Add message
         chat_message = add_chat_message(message_data.session_id, current_user.id, message_data.message)
         
-        # Broadcast to all participants in game
         await manager.broadcast_to_group(f"game_{message_data.session_id}", {
             "type": "chat_message",
             "message": {
@@ -1675,7 +1538,6 @@ async def send_chat_message_api(message_data: ChatMessageCreate, current_user: U
 async def get_game_result_api(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get final game result"""
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id,
             SessionParticipant.user_id == current_user.id
@@ -1684,7 +1546,6 @@ async def get_game_result_api(session_id: str, current_user: User = Depends(get_
         if not participant:
             raise HTTPException(status_code=403, detail="Sie sind kein Teilnehmer dieser Session")
         
-        # Calculate final result
         result = calculate_final_result(session_id)
         if not result:
             raise HTTPException(status_code=404, detail="Spielergebnis nicht gefunden")
@@ -1702,7 +1563,6 @@ async def get_game_result_api(session_id: str, current_user: User = Depends(get_
 async def get_chat_messages_api(session_id: str, limit: int = 50, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get chat messages"""
     try:
-        # Verify user is participant
         participant = db.query(SessionParticipant).filter(
             SessionParticipant.session_id == session_id,
             SessionParticipant.user_id == current_user.id
@@ -1721,14 +1581,11 @@ async def get_chat_messages_api(session_id: str, limit: int = 50, current_user: 
         raise HTTPException(status_code=500, detail="Fehler beim Abrufen der Chat-Nachrichten")
 
 
-# Catch-all handler to serve React app for client-side routing
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
-    # If it's an API route, let it pass through (should be handled by API endpoints above)
     if full_path.startswith("api/"):
         raise HTTPException(status_code=404, detail="API endpoint not found")
     
-    # For all other routes, serve the React index.html
     index_file = "../frontend/build/index.html"
     if os.path.exists(index_file):
         return FileResponse(index_file)
@@ -1737,7 +1594,6 @@ async def serve_react_app(full_path: str):
     else:
         raise HTTPException(status_code=404, detail="Frontend build not found. Run 'npm run build' in frontend directory.")
 
-# Create database tables on startup
 Base.metadata.create_all(bind=engine)
 
 if __name__ == '__main__':

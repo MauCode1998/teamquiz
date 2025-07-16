@@ -83,7 +83,6 @@ class FlashcardDelete(BaseModel):
     flashcard_id: int
 
 
-# Lobby/Session schemas
 class SessionCreate(BaseModel):
     subject_name: str
     group_name: str
@@ -161,7 +160,6 @@ class PendingInvitation(BaseModel):
 
 
 
-# Game schemas
 class GameStateResponse(BaseModel):
     session_id: str
     current_question_index: int

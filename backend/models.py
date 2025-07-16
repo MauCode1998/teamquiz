@@ -86,7 +86,6 @@ class QuizSession(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     join_code = Column(String, unique=True, index=True)
     
-    # Relationships
     subject = relationship("Subject")
     group = relationship("Group")
     host = relationship("User")
@@ -105,7 +104,6 @@ class SessionParticipant(Base):
     joined_at = Column(DateTime, default=datetime.utcnow)
     is_host = Column(Boolean, default=False)
     
-    # Relationships
     session = relationship("QuizSession", back_populates="participants")
     user = relationship("User")
 
@@ -120,7 +118,6 @@ class LobbyInvitation(Base):
     status = Column(String, default="pending")  # pending, accepted, rejected
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     session = relationship("QuizSession", back_populates="invitations")
     inviter = relationship("User", foreign_keys=[inviter_id])
     invitee = relationship("User", foreign_keys=[invitee_id])
@@ -139,7 +136,6 @@ class GameState(Base):
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
     
-    # Relationships
     session = relationship("QuizSession", back_populates="game_state")
     current_flashcard = relationship("Flashcard", foreign_keys=[current_flashcard_id])
 
@@ -154,7 +150,6 @@ class Vote(Base):
     answer_id = Column(Integer, ForeignKey("answers.id"))
     voted_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     session = relationship("QuizSession", back_populates="votes")
     flashcard = relationship("Flashcard")
     user = relationship("User")
@@ -170,7 +165,6 @@ class ChatMessage(Base):
     message = Column(String)
     sent_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     session = relationship("QuizSession", back_populates="chat_messages")
     user = relationship("User")
 

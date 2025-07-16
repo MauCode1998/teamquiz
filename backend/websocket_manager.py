@@ -10,11 +10,8 @@ logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
-        # Dictionary: user_id -> WebSocket connection
         self.active_connections: Dict[int, WebSocket] = {}
-        # Dictionary: group_name -> Set of user_ids
         self.group_users: Dict[str, Set[int]] = {}
-        # Dictionary: user_id -> username (for display)
         self.user_names: Dict[int, str] = {}
 
     async def connect(self, websocket: WebSocket, user_id: int, username: str):
@@ -30,7 +27,6 @@ class ConnectionManager:
             username = self.user_names.get(user_id, "Unknown")
             del self.active_connections[user_id]
             
-            # Remove user from all groups and broadcast updates
             groups_to_update = []
             for group_name in list(self.group_users.keys()):
                 if user_id in self.group_users[group_name]:
@@ -44,7 +40,6 @@ class ConnectionManager:
                 
             logger.info(f"User {username} (ID: {user_id}) disconnected")
             
-            # Broadcast updated online users to affected groups
             for group_name in groups_to_update:
                 await self._broadcast_online_users_update(group_name)
 
@@ -104,7 +99,6 @@ class ConnectionManager:
             else:
                 print(f"🔥 WEBSOCKET DEBUG: User {user_id} not in active connections (might be temporarily disconnected)")
         
-        # Only remove disconnected users who have no active connection at all
         for user_id in disconnected_users:
             if user_id not in self.active_connections:
                 print(f"🔥 WEBSOCKET DEBUG: Removing fully disconnected user {user_id} from group {group_name}")
@@ -114,7 +108,6 @@ class ConnectionManager:
                         del self.group_users[group_name]
                         print(f"🔥 WEBSOCKET DEBUG: Deleted empty group {group_name}")
             
-            # Only fully disconnect if user has no active connection at all
             if user_id not in self.active_connections:
                 if user_id in self.user_names:
                     del self.user_names[user_id]
@@ -175,5 +168,4 @@ class ConnectionManager:
         }
         await self.broadcast_to_group(group_name, message)
 
-# Global connection manager instance
 manager = ConnectionManager()

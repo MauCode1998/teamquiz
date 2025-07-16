@@ -35,10 +35,8 @@ def start_backend():
     """Start the FastAPI backend server"""
     print("🚀 Starting Backend server...")
     
-    # Kill existing backend server
     kill_process_on_port(8000, "Backend")
     
-    # Start backend
     backend_path = os.path.join(os.path.dirname(__file__), 'backend')
     venv_python = os.path.join(os.path.dirname(__file__), 'venv', 'bin', 'python')
     
@@ -55,13 +53,10 @@ def start_frontend():
     """Start the React frontend server"""
     print("🚀 Starting Frontend server...")
     
-    # Kill existing frontend server
     kill_process_on_port(3000, "Frontend")
     
-    # Start frontend
     frontend_path = os.path.join(os.path.dirname(__file__), 'frontend')
     
-    # Check if node_modules exists
     if not os.path.exists(os.path.join(frontend_path, 'node_modules')):
         print("❌ node_modules not found. Running npm install...")
         subprocess.run(['npm', 'install'], cwd=frontend_path, check=True)
@@ -88,20 +83,16 @@ def stop_servers():
 def start_servers():
     """Start both servers"""
     try:
-        # Start backend first
         backend_process = start_backend()
         if not backend_process:
             return
         
-        # Wait a bit for backend to start
         print("⏳ Waiting for backend to initialize...")
         time.sleep(3)
         
-        # Start frontend
         start_frontend()
         
       
-        # Wait for Ctrl+C
         try:
             backend_process.wait()
         except KeyboardInterrupt:
@@ -122,9 +113,7 @@ def main():
         else:
             print("Usage: python manage_servers.py [start|stop]")
     else:
-        # Default: start servers
         start_servers()
 
 if __name__ == "__main__":
-    # Install psutil if not available
     main()
