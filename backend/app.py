@@ -69,16 +69,8 @@ Base.metadata.create_all(bind=engine)
 
 if os.path.exists("../frontend/build/static"):
     app.mount("/static", StaticFiles(directory="../frontend/build/static"), name="static")
-    if os.path.exists("../frontend/build/static/js"):
-        app.mount("/js", StaticFiles(directory="../frontend/build/static/js"), name="js")
-    if os.path.exists("../frontend/build/static/css"):
-        app.mount("/css", StaticFiles(directory="../frontend/build/static/css"), name="css")
 elif os.path.exists("frontend/build/static"):
     app.mount("/static", StaticFiles(directory="frontend/build/static"), name="static")
-    if os.path.exists("frontend/build/static/js"):
-        app.mount("/js", StaticFiles(directory="frontend/build/static/js"), name="js")
-    if os.path.exists("frontend/build/static/css"):
-        app.mount("/css", StaticFiles(directory="frontend/build/static/css"), name="css")
 
 app.add_middleware(
     CORSMiddleware,
