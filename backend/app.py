@@ -67,14 +67,10 @@ app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-if os.path.exists("../frontend/build"):
+if os.path.exists("../frontend/build/static"):
     app.mount("/static", StaticFiles(directory="../frontend/build/static"), name="static")
-    app.mount("/js", StaticFiles(directory="../frontend/build/static/js"), name="js")
-    app.mount("/css", StaticFiles(directory="../frontend/build/static/css"), name="css")
-elif os.path.exists("frontend/build"):
+elif os.path.exists("frontend/build/static"):
     app.mount("/static", StaticFiles(directory="frontend/build/static"), name="static")
-    app.mount("/js", StaticFiles(directory="frontend/build/static/js"), name="js")
-    app.mount("/css", StaticFiles(directory="frontend/build/static/css"), name="css")
 
 app.add_middleware(
     CORSMiddleware,
