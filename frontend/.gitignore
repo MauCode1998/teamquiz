@@ -9,7 +9,7 @@
 /coverage
 
 # production
-/build
+# /build  # Commented out for deployment - we commit build files
 
 # misc
 .DS_Store

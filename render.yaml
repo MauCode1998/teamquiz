@@ -4,13 +4,8 @@ services:
     env: python
     plan: free
     buildCommand: |
-      # Install Python dependencies
+      # Install only backend dependencies (frontend build already included)
       pip install -r requirements.txt
-      # Build frontend
-      cd frontend
-      npm install
-      CI=false NODE_OPTIONS=--openssl-legacy-provider npm run build
-      cd ..
     startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
