@@ -9,7 +9,7 @@ env/
 *.env
 
 # Database
-*.db
+# *.db  # Commented out to track teamquiz.db
 *.sqlite
 *.sqlite3
 
@@ -34,4 +34,4 @@ yarn-error.log*
 
 # Project specific
 *.md
-teamquiz.db
+# teamquiz.db  # Commented out to track database with test user
